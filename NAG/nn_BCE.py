@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetworkBCE:
     def __init__(self, input_size, hidden_sizes, output_size, learning_rate, momentum, epochs):
-        np.random.seed(60)
+        np.random.seed(10)
         
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes  # lista con i neuroni dei layer nascosti
@@ -28,21 +28,17 @@ class NeuralNetworkBCE:
         count = 0
         for i in range(X.shape[0]):
             w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
-            print(w1_pre)
-            print(b1_pre)
-            print(w2_pre)
-            print(b2_pre)
+
             # Forward propagation
             net_hidden = np.dot(w1_pre, X[i]) + b1_pre
             act = self.leacky_relu(net_hidden)
             net_output = np.dot(w2_pre, act) + b2_pre
-            print(net_output)
             output = self.sigmoid(net_output)
             loss = self.compute_bce(output, y[i])
             
             # Backward propagation
-            sigma_output =  - self.compute_bce_derivate(output,y[i]) * self.sigmoid_derivate(net_output)
-            delta_w2 = (sigma_output * act).reshape(1,8)
+            sigma_output = (- self.compute_bce_derivate(output,y[i])) * self.sigmoid_derivate(net_output)
+            delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
             delta_b2 = sigma_output
 
             sigma_hidden = (sigma_output * w2_pre) * self.leacky_relu_derivative(net_hidden)
@@ -50,19 +46,19 @@ class NeuralNetworkBCE:
             delta_b1 = sigma_hidden.reshape(-1)
 
             # Update weights and biases
-            self.w1 = self.w1 - ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-            self.b1 = self.b1 - ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
-            self.w2 = self.w2 - ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
-            self.b2 = self.b2 - ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+            self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
+            self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+            self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
+            self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
 
             # Update velocity
-            self.v_w1 = delta_w1
-            self.v_b1 = delta_b1
-            self.v_w2 = delta_w2
-            self.v_b2 = delta_b2
+            self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
+            self.v_b1 = ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+            self.v_w2 = ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
+            self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
 
             count+=1
-            if count == 5:
+            if count == 55:
                 return
 
 
@@ -94,11 +90,11 @@ class NeuralNetworkBCE:
     # Funzione per anticipare i pesi (pre-update dei pesi)
     def anticipate_weights(self):
         # Calcolare i pesi anticipati con la velocità
-        w1_pre = self.w1 - self.momentum * self.v_w1
-        b1_pre = self.b1 - self.momentum * self.v_b1
+        w1_pre = self.w1 + (self.momentum * self.v_w1)
+        b1_pre = self.b1 + (self.momentum * self.v_b1)
 
-        w2_pre = self.w2 - self.momentum * self.v_w2
-        b2_pre = self.b2 - self.momentum * self.v_b2
+        w2_pre = self.w2 + (self.momentum * self.v_w2)
+        b2_pre = self.b2 + (self.momentum * self.v_b2)
 
         return w1_pre, b1_pre, w2_pre, b2_pre
 
