@@ -25,39 +25,80 @@ class NeuralNetworkBCE:
         self.v_b2 = np.zeros_like(self.b2)
     
     def train(self, X, y):
+        count = 0
         for i in range(X.shape[0]):
             w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
-
+            print(w1_pre)
+            print(b1_pre)
+            print(w2_pre)
+            print(b2_pre)
             # Forward propagation
-            act = self.leacky_relu(np.dot(w1_pre, X[i]) + b1_pre)
-            output = self.sigmoid(np.dot(w2_pre, act) + b2_pre)
-            
+            net_hidden = np.dot(w1_pre, X[i]) + b1_pre
+            act = self.leacky_relu(net_hidden)
+            net_output = np.dot(w2_pre, act) + b2_pre
+            print(net_output)
+            output = self.sigmoid(net_output)
             loss = self.compute_bce(output, y[i])
             
-        
+            # Backward propagation
+            sigma_output =  - self.compute_bce_derivate(output,y[i]) * self.sigmoid_derivate(net_output)
+            delta_w2 = (sigma_output * act).reshape(1,8)
+            delta_b2 = sigma_output
+
+            sigma_hidden = (sigma_output * w2_pre) * self.leacky_relu_derivative(net_hidden)
+            delta_w1 = sigma_hidden.T * X[i]
+            delta_b1 = sigma_hidden.reshape(-1)
+
+            # Update weights and biases
+            self.w1 = self.w1 - ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
+            self.b1 = self.b1 - ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+            self.w2 = self.w2 - ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
+            self.b2 = self.b2 - ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+
+            # Update velocity
+            self.v_w1 = delta_w1
+            self.v_b1 = delta_b1
+            self.v_w2 = delta_w2
+            self.v_b2 = delta_b2
+
+            count+=1
+            if count == 5:
+                return
+
 
 
 
     def compute_bce(self,output,y):
         outputs_clipped = np.clip(output, 1e-15, 1-1e-15)
         return np.mean(-(1 - y) * np.log(1 - outputs_clipped) - y * np.log(outputs_clipped))
+    
+    def compute_bce_derivate(self,output,y):
+        outputs_clipped = np.clip(output, 1e-15, 1-1e-15)
+        return -np.mean(y/outputs_clipped - (1-y)/(1-outputs_clipped))
 
     def sigmoid(self, z):
         return 1 / (1 + np.exp(-z))
+    
+    def sigmoid_derivate(selfself, z):
+        return z * (1 - z) 
     
     def leacky_relu(self, z):
         alpha = 0.01
         return np.maximum(alpha * z, z)
     
+    def leacky_relu_derivative(self, a):
+        alpha = 0.01
+        return np.where(a > 0, 1, alpha)
+    
 
     # Funzione per anticipare i pesi (pre-update dei pesi)
     def anticipate_weights(self):
         # Calcolare i pesi anticipati con la velocità
-        w1_pre = self.w1 + self.momentum * self.v_w1
-        b1_pre = self.b1 + self.momentum * self.v_b1
+        w1_pre = self.w1 - self.momentum * self.v_w1
+        b1_pre = self.b1 - self.momentum * self.v_b1
 
-        w2_pre = self.w2 + self.momentum * self.v_w2
-        b2_pre = self.b2 + self.momentum * self.v_b2
+        w2_pre = self.w2 - self.momentum * self.v_w2
+        b2_pre = self.b2 - self.momentum * self.v_b2
 
         return w1_pre, b1_pre, w2_pre, b2_pre
 
