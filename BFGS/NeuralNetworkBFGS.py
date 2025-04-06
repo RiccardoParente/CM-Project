@@ -1,5 +1,4 @@
 import numpy as np
-from losses import BCE
 
 class NeuralNetworkBFGS:
     def __init__(self, input_size, hidden_size, output_size, loss):
@@ -14,7 +13,6 @@ class NeuralNetworkBFGS:
         self.wo = np.random.randn(self.hidden_size, self.output_size)
         self.bo = np.zeros(self.output_size)
 
-        # Store the dimensions for easier indexing
         self.hidden_param_size = input_size + 1  # Weights + bias for each hidden neuron
         self.output_param_size = hidden_size + 1 # Weights + bias for each output neuron
 
@@ -36,15 +34,8 @@ class NeuralNetworkBFGS:
 
         return self.predicted_output
 
-    def bce(self, y_true, y_pred, epsilon=1e-15):
-        y_pred_clipped = np.clip(y_pred, epsilon, 1 - epsilon)
-        return -np.mean(y_true * np.log(y_pred_clipped) + (1 - y_true) * np.log(1 - y_pred_clipped))
-    
-    def bce_derivative(self, y_true, y_pred, epsilon=1e-15):
-        y_pred_clipped = np.clip(y_pred, 1e-15,1 - epsilon)  # avoids div by 0
-        return -np.mean(y_true/y_pred_clipped - (1-y_true)/(1-y_pred_clipped))
-
-    def _flatten_params(self):
+    #TODO better structure
+    def flatten_params(self):
         return np.concatenate([
             self.wh.ravel(),
             self.bh.ravel(),
@@ -52,7 +43,8 @@ class NeuralNetworkBFGS:
             self.bo.ravel()
         ])
 
-    def _unflatten_params(self, params):
+    #TODO better structure
+    def unflatten_params(self, params):
         """Restore the weights and biases from a flattened vector."""
         start = 0
         end = self.input_size * self.hidden_size
@@ -72,20 +64,21 @@ class NeuralNetworkBFGS:
 
         hidden_delta = np.multiply(np.dot(output_delta, self.wo.T), self.sigmoid_derivative(self.net_h))
 
-        # Gradients
-        self.grad_wo = np.dot(self.hidden_output.T, output_delta)
-        self.grad_bo = np.sum(output_delta, axis=0)
-        self.grad_wh = np.dot(X.T, hidden_delta)
-        self.grad_bh = np.sum(hidden_delta, axis=0)
+        grad_wo = np.dot(self.hidden_output.T, output_delta)
+        grad_bo = np.sum(output_delta, axis=0)
+        grad_wh = np.dot(X.T, hidden_delta)
+        grad_bh = np.sum(hidden_delta, axis=0)
 
+        #TODO better structure
         return np.concatenate([
-            self.grad_wh.ravel(),
-            self.grad_bh.ravel(),
-            self.grad_wo.ravel(),
-            self.grad_bo.ravel()
+            grad_wh.ravel(),
+            grad_bh.ravel(),
+            grad_wo.ravel(),
+            grad_bo.ravel()
         ])
     
     def initialize_hessian(self):
+        '''Hessian initialization'''
         H_k_blocks = {'hidden': [], 'output': []}
         for _ in range(self.hidden_size):
             H_k_blocks['hidden'].append(np.eye(self.input_size + 1))
@@ -93,104 +86,126 @@ class NeuralNetworkBFGS:
             H_k_blocks['output'].append(np.eye(self.hidden_size + 1))
         return H_k_blocks
 
-    def _update_block_diagonal_hessian(self, H_k_blocks, s_k, y_k):
-        """Updates the blocks of the inverse Hessian approximation."""
-        s_k_ptr = 0
-        y_k_ptr = 0
+    #TODO use better structure
+    def update_hessian(self, H_k_blocks, s_k, y_k):
+        '''Approximate inverse Hessian update'''
 
-        # Update hidden layer blocks
         for i in range(self.hidden_size):
-            s_k_block = s_k[s_k_ptr : s_k_ptr + self.input_size + 1][:, np.newaxis]
-            y_k_block = y_k[y_k_ptr : y_k_ptr + self.input_size + 1][:, np.newaxis]
-            H_k = H_k_blocks['hidden'][i]
-            self._update_bfgs_block(H_k, s_k_block, y_k_block)
-            H_k_blocks['hidden'][i] = H_k
-            s_k_ptr += self.input_size + 1
-            y_k_ptr += self.input_size + 1
+            ptr = self.input_size*i
+            s_k_block = np.concatenate((s_k[ptr : ptr + self.input_size], [s_k[(self.input_size*self.hidden_size)+i]]))[:, np.newaxis]
+            y_k_block = np.concatenate((y_k[ptr : ptr + self.input_size], [y_k[(self.input_size*self.hidden_size)+i]]))[:, np.newaxis]
+            H_k_blocks['hidden'][i] = self.update_block(H_k_blocks['hidden'][i], s_k_block, y_k_block)
 
-        # Update output layer blocks
+        offset = (self.input_size*self.hidden_size)+self.hidden_size
         for i in range(self.output_size):
-            s_k_block = s_k[s_k_ptr : s_k_ptr + self.hidden_size + 1][:, np.newaxis]
-            y_k_block = y_k[y_k_ptr : y_k_ptr + self.hidden_size + 1][:, np.newaxis]
-            H_k = H_k_blocks['output'][i]
-            self._update_bfgs_block(H_k, s_k_block, y_k_block)
-            H_k_blocks['output'][i] = H_k
-            s_k_ptr += self.hidden_size + 1
-            y_k_ptr += self.hidden_size + 1
+            ptr = offset+(self.hidden_size*i)
+            s_k_block = np.concatenate((s_k[ptr : ptr + self.hidden_size], [s_k[(self.hidden_size*self.output_size)+i]]))[:, np.newaxis]
+            y_k_block = np.concatenate((y_k[ptr : ptr + self.hidden_size], [y_k[(self.hidden_size*self.output_size)+i]]))[:, np.newaxis]
+            H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
 
-    def _update_bfgs_block(self, H_k, s_k, y_k, epsilon=1e-8):
-        """Applies the BFGS update to a single block of the inverse Hessian."""
+    def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
+        '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
         s_k_dot_y_k = np.dot(s_k_t, y_k)[0, 0]
 
-        if s_k_dot_y_k > epsilon:
+        if s_k_dot_y_k > epsilon: #check division by zero
             rho_k = 1.0 / s_k_dot_y_k
             I = np.eye(H_k.shape[0])
             term1 = (I - rho_k * np.dot(s_k, y_k_t))
             term2 = (I - rho_k * np.dot(y_k, s_k_t))
             term3 = rho_k * np.dot(s_k, s_k_t)
             return np.dot(term1, np.dot(H_k, term2)) + term3
-        return H_k # Return the old H_k if s_k_dot_y_k is too small
+        return H_k
+    
+    def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, c1=1e-4, c2=0.9, max_alpha=1.0):
+        '''Wolfe line search'''
 
-    def train(self, X_train, y_train, learning_rate=0.01, max_iter=100, tol=1e-5):
-        params = self._flatten_params()
+        def phi(alpha):
+            params_temp = self.flatten_params() + alpha * p_k
+            self.unflatten_params(params_temp)
+            self.forward(X_train)
+            return self.loss.compute(self.predicted_output, y_train)
+
+        def dphi(alpha):
+            params_temp = self.flatten_params() + alpha * p_k
+            self.unflatten_params(params_temp)
+            self.forward(X_train)
+            return np.dot(self.compute_gradients(X_train, y_train), p_k)
+
+        alpha_low = 0.0
+        alpha_high = max_alpha
+        phi_prev = self.current_loss
+        dphi_prev = np.dot(grad_f_k, p_k)
+
+        for i in range(100):
+            alpha_i = (alpha_low + alpha_high) / 2.0
+            phi_i = phi(alpha_i)
+            dphi_i = dphi(alpha_i)
+
+            # Check sufficient decrease
+            if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
+                # Check curvature condition
+                if np.abs(dphi_i) <= c2 * np.abs(dphi_prev):
+                    return alpha_i
+
+                if dphi_i > 0:
+                    alpha_high = alpha_i
+                else:
+                    alpha_low = alpha_i
+            else:
+                alpha_high = alpha_i
+
+        return 0.001
+
+    #TODO use better structure
+    def train(self, X_train, y_train, max_iter=100, tol=1e-5):
+        params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
 
         for k in range(max_iter):
-            self._unflatten_params(params)
+            self.unflatten_params(params)
             y_predicted = self.forward(X_train)
-            current_loss = self.loss.compute(y_train, y_predicted)
+            self.current_loss = self.loss.compute(y_train, y_predicted)
             gradients = self.compute_gradients(X_train, y_train)
-            history.append(current_loss)
+            history.append(self.current_loss)
 
             if np.linalg.norm(gradients) < tol:
-                print(f"Converged at iteration {k+1}, loss: {current_loss:.6f}")
+                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}")
                 break
 
-            # Calculate search direction using the block-diagonal inverse Hessian
             p_k = np.zeros_like(gradients)
-            ptr = 0
 
-            # Hidden layer blocks
             for i in range(self.hidden_size):
-                grad_block = gradients[ptr : ptr + self.input_size + 1]
+                ptr = self.input_size*i
+                grad_block = np.concatenate((gradients[ptr : ptr + self.input_size], [gradients[(self.input_size*self.hidden_size)+i]]))
                 H_block = H_k_blocks['hidden'][i]
                 p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
-                ptr += self.input_size + 1
 
-            # Output layer blocks
+            offset = (self.input_size*self.hidden_size)+self.hidden_size
             for i in range(self.output_size):
+                ptr = offset+(self.hidden_size*i)
                 grad_block = gradients[ptr : ptr + self.hidden_size + 1]
                 H_block = H_k_blocks['output'][i]
                 p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
-                ptr += self.hidden_size + 1
 
-            # TODO Wolfe line search
-            alpha_k = learning_rate
-            params_new = params + alpha_k * p_k
-            self._unflatten_params(params_new)
-            loss_new = self.loss.compute(y_train, self.forward(X_train))
+            alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train)
 
-            # Basic Wolfe condition check (sufficient decrease)
-            c1 = 1e-4
-            self._unflatten_params(params) # Restore old params for gradient calculation
-            if loss_new > current_loss + c1 * alpha_k * np.dot(gradients, p_k):
-                print(f"Line search failed at iteration {k+1}")
-                break
+            params_new = params + (alpha_k * p_k)
+            self.unflatten_params(params_new)
 
             s_k = params_new - params
+            self.forward(X_train)
             gradients_new = self.compute_gradients(X_train, y_train)
             y_k = gradients_new - gradients
 
-            # Update the block-diagonal inverse Hessian approximation
-            self._update_block_diagonal_hessian(H_k_blocks, s_k, y_k)
+            self.update_hessian(H_k_blocks, s_k, y_k)
 
             params = params_new
 
         else:
-            print(f"Maximum iterations reached, final loss: {current_loss:.6f}")
+            print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}")
 
-        self._unflatten_params(params)
+        self.unflatten_params(params)
         return history

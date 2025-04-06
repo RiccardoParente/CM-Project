@@ -1,6 +1,6 @@
 import numpy as np
 
-class MSE():
+class MSE:
     """ Mean Squared Error loss """
 
     def __init__(self):
@@ -13,7 +13,7 @@ class MSE():
         return -2 * (targets - outputs)
 
 
-class BCE():
+class BCE:
     """ Binary Cross Entropy loss """
 
     def __init__(self):
