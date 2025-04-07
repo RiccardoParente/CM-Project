@@ -31,51 +31,50 @@ class NeuralNetworkBFGS:
         # Output layer
         self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
         self.predicted_output = self.sigmoid(self.net_o)
-
         return self.predicted_output
 
-    #TODO better structure
     def flatten_params(self):
-        return np.concatenate([
-            self.wh.ravel(),
-            self.bh.ravel(),
-            self.wo.ravel(),
-            self.bo.ravel()
-        ])
+        output = np.array([])
+        for i in range(self.hidden_size):
+            output = np.concatenate((output, self.wh[:,i], [self.bh[i]]))
+        for i in range(self.output_size):
+            output = np.concatenate((output, self.wo[:,i], [self.bo[i]]))
+        return output
 
-    #TODO better structure
     def unflatten_params(self, params):
         """Restore the weights and biases from a flattened vector."""
-        start = 0
-        end = self.input_size * self.hidden_size
-        self.wh = params[start:end].reshape(self.input_size, self.hidden_size)
-        start = end
-        end = start + self.hidden_size
-        self.bh = params[start:end]
-        start = end
-        end = start + self.hidden_size * self.output_size
-        self.wo = params[start:end].reshape(self.hidden_size, self.output_size)
-        start = end
-        end = start + self.output_size
-        self.bo = params[start:end]
+        wh_temp = []
+        bh_temp = []
+        wo_temp = []
+        bo_temp = []
+        for i in range(self.hidden_size):
+            ptr = self.input_size*i
+            wh_temp = np.concatenate((wh_temp, params[ptr:ptr+self.input_size]))
+            bh_temp = np.concatenate((bh_temp, [params[ptr+self.input_size]]))
+        self.wh = np.array(wh_temp).reshape(self.input_size, self.hidden_size)
+        self.bh = np.array(bh_temp)
+        offset = (self.input_size*self.hidden_size)+self.hidden_size
+        for i in range(self.output_size):
+            ptr = offset+(self.hidden_size*i)
+            wo_temp = np.concatenate((wo_temp, params[ptr:ptr+self.hidden_size]))
+            bo_temp = np.concatenate((bo_temp, [params[ptr+self.hidden_size]]))
+        self.wo = np.array(wo_temp).reshape(self.hidden_size, self.output_size)
+        self.bo = np.array(bo_temp)
 
     def compute_gradients(self, X, y):
-        output_delta = np.multiply(self.loss.derivative(y, self.predicted_output), self.sigmoid_derivative(self.net_o))   
-
+        output_delta = np.multiply(self.loss.derivative(self.predicted_output, y), self.sigmoid_derivative(self.net_o))   
         hidden_delta = np.multiply(np.dot(output_delta, self.wo.T), self.sigmoid_derivative(self.net_h))
-
         grad_wo = np.dot(self.hidden_output.T, output_delta)
         grad_bo = np.sum(output_delta, axis=0)
         grad_wh = np.dot(X.T, hidden_delta)
         grad_bh = np.sum(hidden_delta, axis=0)
 
-        #TODO better structure
-        return np.concatenate([
-            grad_wh.ravel(),
-            grad_bh.ravel(),
-            grad_wo.ravel(),
-            grad_bo.ravel()
-        ])
+        output = np.array([])
+        for i in range(self.hidden_size):
+            output = np.concatenate((output, grad_wh[:,i], [grad_bh[i]]))
+        for i in range(self.output_size):
+            output = np.concatenate((output, grad_wo[:,i], [grad_bo[i]]))
+        return output
     
     def initialize_hessian(self):
         '''Hessian initialization'''
@@ -86,21 +85,20 @@ class NeuralNetworkBFGS:
             H_k_blocks['output'].append(np.eye(self.hidden_size + 1))
         return H_k_blocks
 
-    #TODO use better structure
     def update_hessian(self, H_k_blocks, s_k, y_k):
         '''Approximate inverse Hessian update'''
 
         for i in range(self.hidden_size):
-            ptr = self.input_size*i
-            s_k_block = np.concatenate((s_k[ptr : ptr + self.input_size], [s_k[(self.input_size*self.hidden_size)+i]]))[:, np.newaxis]
-            y_k_block = np.concatenate((y_k[ptr : ptr + self.input_size], [y_k[(self.input_size*self.hidden_size)+i]]))[:, np.newaxis]
+            ptr = (self.input_size+1)*i
+            s_k_block = s_k[ptr : ptr + self.input_size+1][:, np.newaxis]
+            y_k_block = y_k[ptr : ptr + self.input_size+1][:, np.newaxis]
             H_k_blocks['hidden'][i] = self.update_block(H_k_blocks['hidden'][i], s_k_block, y_k_block)
 
         offset = (self.input_size*self.hidden_size)+self.hidden_size
         for i in range(self.output_size):
-            ptr = offset+(self.hidden_size*i)
-            s_k_block = np.concatenate((s_k[ptr : ptr + self.hidden_size], [s_k[(self.hidden_size*self.output_size)+i]]))[:, np.newaxis]
-            y_k_block = np.concatenate((y_k[ptr : ptr + self.hidden_size], [y_k[(self.hidden_size*self.output_size)+i]]))[:, np.newaxis]
+            ptr = offset+((self.hidden_size+1)*i)
+            s_k_block = s_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
+            y_k_block = y_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
 
     def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
@@ -158,8 +156,7 @@ class NeuralNetworkBFGS:
 
         return 0.001
 
-    #TODO use better structure
-    def train(self, X_train, y_train, max_iter=100, tol=1e-5):
+    def train(self, X_train, y_train, max_iter=100, tol=1e-6):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
@@ -178,14 +175,14 @@ class NeuralNetworkBFGS:
             p_k = np.zeros_like(gradients)
 
             for i in range(self.hidden_size):
-                ptr = self.input_size*i
-                grad_block = np.concatenate((gradients[ptr : ptr + self.input_size], [gradients[(self.input_size*self.hidden_size)+i]]))
+                ptr = (self.input_size+1)*i
+                grad_block = gradients[ptr : ptr + self.input_size + 1]
                 H_block = H_k_blocks['hidden'][i]
                 p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
 
             offset = (self.input_size*self.hidden_size)+self.hidden_size
             for i in range(self.output_size):
-                ptr = offset+(self.hidden_size*i)
+                ptr = offset+((self.hidden_size+1)*i)
                 grad_block = gradients[ptr : ptr + self.hidden_size + 1]
                 H_block = H_k_blocks['output'][i]
                 p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)

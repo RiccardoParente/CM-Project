@@ -18,7 +18,7 @@ class BCE:
 
 if __name__ == '__main__':
     input_size = 6
-    hidden_size = 8
+    hidden_size = 3
     output_size = 1
     learning_rate = 1
     max_iterations = 2000
@@ -40,11 +40,11 @@ if __name__ == '__main__':
     # Test the trained network
     print("\nPredictions after training:")
     predictions = nn.forward(X_bce)
-    #print(predictions)
+    print(np.mean(np.power(y_bce - predictions, 2)))
 
     import matplotlib.pyplot as plt
     plt.plot(history)
     plt.xlabel("Iteration")
-    plt.ylabel("Loss")
-    plt.title("Training Loss over Iterations (BFGS-N from Scratch)")
+    plt.ylabel("Loss (BCE)")
+    plt.title("Training Loss over Iterations (BFGS-N)")
     plt.show()
