@@ -32,9 +32,9 @@ model_bce.print_structure()
 
 model_mse = NeuralNetworkMSE(
     input_size=12,
-    hidden_sizes=[16, 8],
+    hidden_sizes=[8, 4],
     output_size=3,
-    learning_rate=0.01,
+    learning_rate=0.001,
     momentum=0.9,
     epochs=100
 )
@@ -43,7 +43,7 @@ model_mse.print_structure()
 # --- Training --- #
 loss_bce = model_bce.train(X_bce, y_bce)
 
-#loss_mse = model_mse.train(X_mse, y_mse)
+loss_mse = model_mse.train(X_mse, y_mse)
 
 # --- Plot --- #
 plt.figure(figsize=(12, 5))
@@ -51,18 +51,18 @@ plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
 plt.plot(loss_bce, label='Loss BCE')
 plt.title('Loss BCE durante il training')
-plt.xlabel('Epoca')
+plt.xlabel('Campioni')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-'''
+
 plt.subplot(1, 2, 2)
 plt.plot(loss_mse, label='Loss MSE', color='orange')
 plt.title('Loss MSE durante il training')
-plt.xlabel('Epoca')
+plt.xlabel('Campioni')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-'''
+
 plt.tight_layout()
 plt.show()

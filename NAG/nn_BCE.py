@@ -42,7 +42,7 @@ class NeuralNetworkBCE:
             loss_bce.append(loss)
 
             # Backward propagation
-            sigma_output = y[i] -output
+            sigma_output = y[i] - output
             delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
             delta_b2 = sigma_output
 
