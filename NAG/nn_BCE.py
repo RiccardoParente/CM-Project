@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetworkBCE:
     def __init__(self, input_size, hidden_sizes, output_size, learning_rate, momentum, epochs):
-        np.random.seed(10)
+        np.random.seed(100)
         
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes  # lista con i neuroni dei layer nascosti
@@ -25,7 +25,9 @@ class NeuralNetworkBCE:
         self.v_b2 = np.zeros_like(self.b2)
     
     def train(self, X, y):
-        count = 0
+        loss_bce = []
+        T = len(X)
+        t = 1
         for i in range(X.shape[0]):
             w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
 
@@ -34,10 +36,13 @@ class NeuralNetworkBCE:
             act = self.leacky_relu(net_hidden)
             net_output = np.dot(w2_pre, act) + b2_pre
             output = self.sigmoid(net_output)
+
+            # Compute Loss
             loss = self.compute_bce(output, y[i])
-            
+            loss_bce.append(loss)
+
             # Backward propagation
-            sigma_output = (- self.compute_bce_derivate(output,y[i])) * self.sigmoid_derivate(net_output)
+            sigma_output = y[i] -output
             delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
             delta_b2 = sigma_output
 
@@ -57,11 +62,10 @@ class NeuralNetworkBCE:
             self.v_w2 = ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
             self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
 
-            count+=1
-            if count == 55:
-                return
+            self.momentum = self.momentum *(1 - (t/T))
+            t+=1
 
-
+        return loss_bce
 
 
     def compute_bce(self,output,y):
