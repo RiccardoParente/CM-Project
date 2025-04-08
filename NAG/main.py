@@ -42,8 +42,8 @@ model_mse.print_structure()
 
 # --- Training --- #
 loss_bce = model_bce.train(X_bce, y_bce)
-'''
-loss_mse = model_mse.train(X_mse, y_mse)
+
+#loss_mse = model_mse.train(X_mse, y_mse)
 
 # --- Plot --- #
 plt.figure(figsize=(12, 5))
@@ -55,7 +55,7 @@ plt.xlabel('Epoca')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-
+'''
 plt.subplot(1, 2, 2)
 plt.plot(loss_mse, label='Loss MSE', color='orange')
 plt.title('Loss MSE durante il training')
@@ -63,7 +63,6 @@ plt.xlabel('Epoca')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-
+'''
 plt.tight_layout()
 plt.show()
-'''

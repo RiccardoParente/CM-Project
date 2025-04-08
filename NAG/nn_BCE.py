@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetworkBCE:
     def __init__(self, input_size, hidden_sizes, output_size, learning_rate, momentum, epochs):
-        np.random.seed(10)
+        np.random.seed(200)
         
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes  # lista con i neuroni dei layer nascosti
@@ -25,25 +25,31 @@ class NeuralNetworkBCE:
         self.v_b2 = np.zeros_like(self.b2)
     
     def train(self, X, y):
-        count = 0
-        for i in range(X.shape[0]):
+        loss_bce = []
+        T = len(X)
+        t = 1
+        for i in range(self.epochs):
+            np.random.shuffle(X)
             w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
 
             # Forward propagation
-            net_hidden = np.dot(w1_pre, X[i]) + b1_pre
+            net_hidden = np.dot(w1_pre, X.T).T + b1_pre
             act = self.leacky_relu(net_hidden)
-            net_output = np.dot(w2_pre, act) + b2_pre
+            net_output = np.dot(w2_pre, act.T).T + b2_pre
             output = self.sigmoid(net_output)
-            loss = self.compute_bce(output, y[i])
             
-            # Backward propagation
-            sigma_output = (- self.compute_bce_derivate(output,y[i])) * self.sigmoid_derivate(net_output)
-            delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
-            delta_b2 = sigma_output
+            loss = self.compute_bce(output, y)
+            loss_bce.append(loss)
 
+            # Backward propagation
+            sigma_output = y - output
+            delta_w2 = sum((sigma_output * act)).reshape(1,self.hidden_sizes[0])
+            delta_b2 = sum(sigma_output)
+    
             sigma_hidden = (sigma_output * w2_pre) * self.leacky_relu_derivative(net_hidden)
-            delta_w1 = sigma_hidden.T * X[i]
-            delta_b1 = sigma_hidden.reshape(-1)
+            delta_w1 = sum(X[:, :, np.newaxis] * sigma_hidden[:, np.newaxis, :]).T
+            delta_b1 = sum(sigma_hidden).reshape(-1)
+            
 
             # Update weights and biases
             self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
@@ -51,15 +57,16 @@ class NeuralNetworkBCE:
             self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
             self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
 
-            # Update velocity
+            # Update velocity and momentum
             self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
             self.v_b1 = ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
             self.v_w2 = ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
             self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
 
-            count+=1
-            if count == 55:
-                return
+            self.momentum = self.momentum *(1 - (t/T))
+            t+=1
+            
+        return loss_bce
 
 
 
