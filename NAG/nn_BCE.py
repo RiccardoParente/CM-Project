@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetworkBCE:
     def __init__(self, input_size, hidden_sizes, output_size, learning_rate, momentum, epochs):
-        np.random.seed(100)
+        np.random.seed(200)
         
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes  # lista con i neuroni dei layer nascosti
