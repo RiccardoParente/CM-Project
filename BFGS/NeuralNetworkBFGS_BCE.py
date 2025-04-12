@@ -120,14 +120,14 @@ class NeuralNetworkBFGS_BCE:
     def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, c1=1e-4, c2=0.9, max_alpha=1.0):
         '''Wolfe line search'''
 
-        def phi(alpha):
-            params_temp = self.flatten_params() + alpha * p_k
+        def phi(params, alpha):
+            params_temp = params + alpha * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
             return self.loss.compute(self.predicted_output, y_train)
 
-        def dphi(alpha):
-            params_temp = self.flatten_params() + alpha * p_k
+        def dphi(params, alpha):
+            params_temp = params + alpha * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
             return np.dot(self.compute_gradients(X_train, y_train), p_k)
@@ -136,6 +136,7 @@ class NeuralNetworkBFGS_BCE:
         alpha_high = max_alpha
         phi_prev = self.current_loss
         dphi_prev = np.dot(grad_f_k, p_k)
+        params = self.flatten_params()
 
         for i in range(50):
             alpha_i = (alpha_low + alpha_high) / 2.0
