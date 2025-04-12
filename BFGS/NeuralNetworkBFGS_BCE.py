@@ -140,8 +140,8 @@ class NeuralNetworkBFGS_BCE:
 
         for i in range(50):
             alpha_i = (alpha_low + alpha_high) / 2.0
-            phi_i = phi(alpha_i)
-            dphi_i = dphi(alpha_i)
+            phi_i = phi(params, alpha_i)
+            dphi_i = dphi(params, alpha_i)
 
             # Check sufficient decrease
             if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
