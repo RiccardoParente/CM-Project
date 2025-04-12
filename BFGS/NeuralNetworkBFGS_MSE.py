@@ -1,6 +1,6 @@
 import numpy as np
 
-class NeuralNetworkBFGS:
+class NeuralNetworkBFGS_MSE:
     def __init__(self, input_size, hidden_size, output_size, loss):
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -8,29 +8,30 @@ class NeuralNetworkBFGS:
         self.loss = loss
 
         # Initialize weights and biases randomly
-        self.wh = np.random.randn(self.input_size, self.hidden_size)
+        self.wh = np.random.randn(self.input_size, self.hidden_size) * np.sqrt(2.0 / input_size)
         self.bh = np.zeros(self.hidden_size)
-        self.wo = np.random.randn(self.hidden_size, self.output_size)
+        self.wo = np.random.randn(self.hidden_size, self.output_size) * np.sqrt(2.0 / hidden_size)
         self.bo = np.zeros(self.output_size)
 
         self.hidden_param_size = input_size + 1  # Weights + bias for each hidden neuron
         self.output_param_size = hidden_size + 1 # Weights + bias for each output neuron
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        s = self.sigmoid(x)
-        return s * (1 - s)
+    def leacky_relu(self, z):
+        alpha = 0.01
+        return np.maximum(alpha * z, z)
+    
+    def leacky_relu_derivative(self, a):
+        alpha = 0.01
+        return np.where(a > 0, 1, alpha)
 
     def forward(self, X):
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh
-        self.hidden_output = self.sigmoid(self.net_h)
+        self.hidden_output = self.leacky_relu(self.net_h)
 
         # Output layer
         self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
-        self.predicted_output = self.sigmoid(self.net_o)
+        self.predicted_output = self.net_o
         return self.predicted_output
 
     def flatten_params(self):
@@ -62,18 +63,18 @@ class NeuralNetworkBFGS:
         self.bo = np.array(bo_temp)
 
     def compute_gradients(self, X, y):
-        output_delta = np.multiply(self.loss.derivative(self.predicted_output, y), self.sigmoid_derivative(self.net_o))   
-        hidden_delta = np.multiply(np.dot(output_delta, self.wo.T), self.sigmoid_derivative(self.net_h))
-        grad_wo = np.dot(self.hidden_output.T, output_delta)
-        grad_bo = np.sum(output_delta, axis=0)
-        grad_wh = np.dot(X.T, hidden_delta)
-        grad_bh = np.sum(hidden_delta, axis=0)
+        output_delta = self.loss.derivative(y, self.predicted_output)
+        hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
+        grad_wo = self.hidden_output.T * output_delta[:, np.newaxis]
+        grad_bo = output_delta
+        grad_wh = X.T * hidden_delta[:, np.newaxis]
+        grad_bh = hidden_delta
 
         output = np.array([])
         for i in range(self.hidden_size):
-            output = np.concatenate((output, grad_wh[:,i], [grad_bh[i]]))
+            output = np.concatenate((output, grad_wh[i], [grad_bh[i]]))
         for i in range(self.output_size):
-            output = np.concatenate((output, grad_wo[:,i], [grad_bo[i]]))
+            output = np.concatenate((output, grad_wo[i], [grad_bo[i]]))
         return output
     
     def initialize_hessian(self):
@@ -136,7 +137,7 @@ class NeuralNetworkBFGS:
         phi_prev = self.current_loss
         dphi_prev = np.dot(grad_f_k, p_k)
 
-        for i in range(100):
+        for i in range(50):
             alpha_i = (alpha_low + alpha_high) / 2.0
             phi_i = phi(alpha_i)
             dphi_i = dphi(alpha_i)
@@ -156,7 +157,7 @@ class NeuralNetworkBFGS:
 
         return 0.001
 
-    def train(self, X_train, y_train, max_iter=100, tol=1e-6):
+    def train(self, X_train, y_train, max_iter=100, tol=1e-8):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
