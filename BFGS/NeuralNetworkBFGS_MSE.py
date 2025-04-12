@@ -101,6 +101,7 @@ class NeuralNetworkBFGS_MSE:
             s_k_block = s_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
             y_k_block = y_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
+        return H_k_blocks
 
     def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
         '''Approximate inverse Hessian block update'''
@@ -155,7 +156,7 @@ class NeuralNetworkBFGS_MSE:
             else:
                 alpha_high = alpha_i
 
-        return 0.001
+        return 0.0001
 
     def train(self, X_train, y_train, max_iter=100, tol=1e-8):
         params = self.flatten_params()

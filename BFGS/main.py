@@ -26,7 +26,7 @@ class MSE:
         return np.mean(np.power(targets - outputs, 2))
 
     def derivative(self, outputs, targets):
-        return -2 * (targets - outputs)
+        return (targets - outputs)
     
 if __name__ == '__main__':
     input_size_bce = 6
