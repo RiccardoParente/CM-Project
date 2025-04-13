@@ -28,42 +28,73 @@ class NeuralNetworkBCE:
         loss_bce = []
         T = len(X)
         t = 1
-        for i in range(X.shape[0]):
-            w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
+        prev_loss = None
+        patience = 10
+        patience_counter = 0
+        tolerance = 1e-2
+        end = False
+        for j in range(self.epochs):
+            indices = np.random.permutation(len(X))
+            X = X[indices]
+            y = y[indices]
+            for i in range(X.shape[0]):
+                w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
 
-            # Forward propagation
-            net_hidden = np.dot(w1_pre, X[i]) + b1_pre
-            act = self.leacky_relu(net_hidden)
-            net_output = np.dot(w2_pre, act) + b2_pre
-            output = self.sigmoid(net_output)
+                # Forward propagation
+                net_hidden = np.dot(w1_pre, X[i]) + b1_pre
+                act = self.leacky_relu(net_hidden)
+                net_output = np.dot(w2_pre, act) + b2_pre
+                output = self.sigmoid(net_output)
 
-            # Compute Loss
-            loss = self.compute_bce(output, y[i])
-            loss_bce.append(loss)
+                # Compute Loss
+                loss = self.compute_bce(output, y[i])
+                loss_bce.append(loss)
 
-            # Backward propagation
-            sigma_output = y[i] - output
-            delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
-            delta_b2 = sigma_output
+                # Controllo divergenza
+                if np.isnan(loss) or loss > 1e5:
+                    print("❌ Loss diverging. Stopping.")
+                    end = True
+                    break
 
-            sigma_hidden = (sigma_output * w2_pre) * self.leacky_relu_derivative(net_hidden)
-            delta_w1 = sigma_hidden.T * X[i]
-            delta_b1 = sigma_hidden.reshape(-1)
+                # Controllo convergenza
+                if prev_loss is not None:
+                    if abs(loss - prev_loss) < tolerance:
+                        patience_counter += 1
+                        if patience_counter >= patience:
+                            print("✅ Loss converged. Stopping.")
+                            end = True
+                            break
+                    else:
+                        patience_counter = 0
 
-            # Update weights and biases
-            self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-            self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
-            self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
-            self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+                prev_loss = loss
 
-            # Update velocity
-            self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-            self.v_b1 = ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
-            self.v_w2 = ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
-            self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+                # Backward propagation
+                sigma_output = y[i] - output
+                delta_w2 = (sigma_output * act).reshape(1,self.hidden_sizes[0])
+                delta_b2 = sigma_output
 
-            self.momentum = self.momentum *(1 - (t/T))
-            t+=1
+                sigma_hidden = (sigma_output * w2_pre) * self.leacky_relu_derivative(net_hidden)
+                delta_w1 = sigma_hidden.T * X[i]
+                delta_b1 = sigma_hidden.reshape(-1)
+
+                # Update weights and biases
+                self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
+                self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+                self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
+                self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+
+                # Update velocity
+                self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
+                self.v_b1 = ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+                self.v_w2 = ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
+                self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+
+                self.momentum = self.momentum *(1 - (t/T))
+                t+=1
+
+            if end:
+                break
 
         return loss_bce
 
