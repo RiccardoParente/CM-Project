@@ -63,7 +63,7 @@ class NeuralNetworkBFGS_MSE:
         self.bo = np.array(bo_temp)
 
     def compute_gradients(self, X, y):
-        output_delta = self.loss.derivative(y, self.predicted_output)
+        output_delta = self.loss.derivative(self.predicted_output, y)
         hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
         grad_wo = self.hidden_output.T * output_delta[:, np.newaxis]
         grad_bo = output_delta
@@ -103,13 +103,13 @@ class NeuralNetworkBFGS_MSE:
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
         return H_k_blocks
 
-    def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
+    def update_block(self, H_k, s_k, y_k, epsilon=1e-4):
         '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
         s_k_dot_y_k = np.dot(s_k_t, y_k)[0, 0]
 
-        if s_k_dot_y_k > epsilon: #check division by zero
+        if s_k_dot_y_k > epsilon:
             rho_k = 1.0 / s_k_dot_y_k
             I = np.eye(H_k.shape[0])
             term1 = (I - rho_k * np.dot(s_k, y_k_t))
@@ -165,6 +165,9 @@ class NeuralNetworkBFGS_MSE:
         history = []
 
         for k in range(max_iter):
+            indices = np.random.permutation(len(X_train))
+            X_train = X_train[indices]
+            y_train = y_train[indices]
             for j in range(X_train.shape[0]):
                 x = X_train[j]
                 y = y_train[j]

@@ -8,9 +8,9 @@ class NeuralNetworkBFGS_BCE:
         self.loss = loss
 
         # Initialize weights and biases randomly
-        self.wh = np.random.randn(self.input_size, self.hidden_size)
+        self.wh = np.random.randn(self.input_size, self.hidden_size) * np.sqrt(2.0 / input_size)
         self.bh = np.zeros(self.hidden_size)
-        self.wo = np.random.randn(self.hidden_size, self.output_size)
+        self.wo = np.random.randn(self.hidden_size, self.output_size) * np.sqrt(2.0 / hidden_size)
         self.bo = np.zeros(self.output_size)
 
         self.hidden_param_size = input_size + 1  # Weights + bias for each hidden neuron
@@ -102,13 +102,13 @@ class NeuralNetworkBFGS_BCE:
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
         return H_k_blocks
 
-    def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
+    def update_block(self, H_k, s_k, y_k, epsilon=1e-6):
         '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
         s_k_dot_y_k = np.dot(s_k_t, y_k)[0, 0]
 
-        if s_k_dot_y_k > epsilon: #check division by zero
+        if s_k_dot_y_k > epsilon:
             rho_k = 1.0 / s_k_dot_y_k
             I = np.eye(H_k.shape[0])
             term1 = (I - rho_k * np.dot(s_k, y_k_t))
@@ -162,11 +162,14 @@ class NeuralNetworkBFGS_BCE:
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
-        T = len(X_train)*max_iter
+        T = max_iter
         t = 1
         converged = False
 
         for k in range(max_iter):
+            indices = np.random.permutation(len(X_train))
+            X_train = X_train[indices]
+            y_train = y_train[indices]
             for j in range(X_train.shape[0]):
                 x = X_train[j]
                 y = y_train[j]
