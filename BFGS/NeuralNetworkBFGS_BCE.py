@@ -198,7 +198,7 @@ class NeuralNetworkBFGS_BCE:
 
                 alpha_k = self.line_search_wolfe(p_k, gradients, x, y)
                 alpha_k = alpha_k*(1 - (t/T))
-                t = 1
+                t += 1
 
                 params_new = params + (alpha_k * p_k)
                 self.unflatten_params(params_new)
