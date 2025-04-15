@@ -26,7 +26,7 @@ class NeuralNetworkBCE:
     
     def train(self, X, y):
         loss_bce = []
-        T = len(X)
+        T = len(X )* self.epochs
         t = 1
         prev_loss = None
         patience = 10

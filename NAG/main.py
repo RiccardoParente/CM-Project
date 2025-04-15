@@ -3,6 +3,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from nn_BCE import NeuralNetworkBCE
 from nn_MSE import NeuralNetworkMSE
+from Draft_nn_BCE_BFGS import NeuralNetworkBCEBFGS
 
 # --- Caricamento dataset da CSV --- #
 # Dataset BCE: 6 input, 1 target
@@ -22,7 +23,29 @@ X_mse_normalized = scaler.fit_transform(X_mse)
 y_mse = data_mse[:, -3:]
 y_mse_normalized = scaler.fit_transform(y_mse)
 
+# --- Istanziamento modelli --- #
+model_bce = NeuralNetworkBCEBFGS(
+    input_size=6,
+    hidden_sizes=[8],
+    output_size=1,
+    epochs=10000
+)
+model_bce.print_structure()
+loss_bce = model_bce.train(X_bce, y_bce)
 
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(loss_bce, label='Loss BCE')
+plt.title('Loss BCE durante il training')
+plt.xlabel('Campioni')
+plt.ylabel('Loss')
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+'''
 # --- Istanziamento modelli --- #
 model_bce = NeuralNetworkBCE(
     input_size=6,
@@ -46,8 +69,10 @@ model_mse.print_structure()
 
 # --- Training --- #
 loss_bce = model_bce.train(X_bce, y_bce)
+print(loss_bce[-1])
 
 loss_mse = model_mse.train(X_mse_normalized, y_mse_normalized)
+print(loss_mse[-1])
 
 # --- Plot --- #
 plt.figure(figsize=(12, 5))
@@ -72,3 +97,4 @@ plt.legend()
 
 plt.tight_layout()
 plt.show()
+''' 
