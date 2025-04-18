@@ -107,7 +107,7 @@ class NeuralNetworkBFGS_MSE:
         '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
-        s_k_dot_y_k = np.dot(s_k_t, y_k)[0, 0]
+        s_k_dot_y_k = np.dot(y_k_t, s_k)[0, 0]
 
         if s_k_dot_y_k > epsilon:
             rho_k = 1.0 / s_k_dot_y_k
@@ -118,14 +118,14 @@ class NeuralNetworkBFGS_MSE:
             return np.dot(term1, np.dot(H_k, term2)) + term3
         return H_k
     
-    def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, c1=1e-4, c2=0.9, max_alpha=1.0):
+    def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, t, T, c1=1e-4, c2=0.9, max_alpha=1.0):
         '''Wolfe line search'''
 
         def phi(params, alpha):
             params_temp = params + alpha * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
-            return self.loss.compute(self.predicted_output, y_train)
+            return self.loss.compute(self.predicted_output, y_train)+0.005*np.linalg.norm(params_temp)
 
         def dphi(params, alpha):
             params_temp = params + alpha * p_k
@@ -138,8 +138,9 @@ class NeuralNetworkBFGS_MSE:
         phi_prev = self.current_loss
         dphi_prev = np.dot(grad_f_k, p_k)
         params = self.flatten_params()
+        alpha_i = 0
 
-        for i in range(50):
+        for i in range(20):
             alpha_i = (alpha_low + alpha_high) / 2.0
             phi_i = phi(params,alpha_i)
             dphi_i = dphi(params, alpha_i)
@@ -157,12 +158,16 @@ class NeuralNetworkBFGS_MSE:
             else:
                 alpha_high = alpha_i
 
-        return 0.0001
+        return alpha_i*(1-(t/T))
 
-    def train(self, X_train, y_train, max_iter=100, tol=1e-8):
+    def train(self, X_train, y_train, max_iter=100, tol=1e-4):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
+        T = max_iter
+        t = 1
+        gradients = 0
+        self.current_loss = 0
 
         for k in range(max_iter):
             indices = np.random.permutation(len(X_train))
@@ -173,42 +178,49 @@ class NeuralNetworkBFGS_MSE:
                 y = y_train[j]
                 self.unflatten_params(params)
                 y_predicted = self.forward(x)
-                self.current_loss = self.loss.compute(y, y_predicted)
-                gradients = self.compute_gradients(x, y)
-                history.append(self.current_loss)
+                self.current_loss += self.loss.compute(y_predicted, y)+0.005*np.linalg.norm(params)
+                gradients += self.compute_gradients(x, y)
 
-                if np.linalg.norm(gradients) < tol:
-                    print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}")
-                    break
+            gradients /= X_train.shape[0]
+            self.current_loss /= X_train.shape[0]
+            history.append(self.current_loss)
+            if np.linalg.norm(gradients) < tol:
+                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}")
+                break
 
-                p_k = np.zeros_like(gradients)
+            p_k = np.zeros_like(gradients)
 
-                for i in range(self.hidden_size):
-                    ptr = (self.input_size+1)*i
-                    grad_block = gradients[ptr : ptr + self.input_size + 1]
-                    H_block = H_k_blocks['hidden'][i]
-                    p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
+            for i in range(self.hidden_size):
+                ptr = (self.input_size+1)*i
+                grad_block = gradients[ptr : ptr + self.input_size + 1]
+                H_block = H_k_blocks['hidden'][i]
+                p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
 
-                offset = (self.input_size*self.hidden_size)+self.hidden_size
-                for i in range(self.output_size):
-                    ptr = offset+((self.hidden_size+1)*i)
-                    grad_block = gradients[ptr : ptr + self.hidden_size + 1]
-                    H_block = H_k_blocks['output'][i]
-                    p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
+            offset = (self.input_size*self.hidden_size)+self.hidden_size
+            for i in range(self.output_size):
+                ptr = offset+((self.hidden_size+1)*i)
+                grad_block = gradients[ptr : ptr + self.hidden_size + 1]
+                H_block = H_k_blocks['output'][i]
+                p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
 
-                alpha_k = self.line_search_wolfe(p_k, gradients, x, y)
+            alpha_k = self.line_search_wolfe(p_k, gradients, x, y, t, T)
 
-                params_new = params + (alpha_k * p_k)
-                self.unflatten_params(params_new)
+            params_new = params + (alpha_k * p_k) - (0.005*params)
+            self.unflatten_params(params_new)
 
-                s_k = params_new - params
-                self.forward(x)
-                gradients_new = self.compute_gradients(x, y)
-                y_k = gradients_new - gradients
+            s_k = params_new - params
+            gradients_new = 0
+            for j in range(X_train.shape[0]):
+                x = X_train[j]
+                y = y_train[j]
+                y_predicted = self.forward(x)
+                gradients_new += self.compute_gradients(x, y)
+            gradients_new /= X_train.shape[0]
+            y_k = gradients_new - gradients
 
-                self.update_hessian(H_k_blocks, s_k, y_k)
+            self.update_hessian(H_k_blocks, s_k, y_k)
 
-                params = params_new
+            params = params_new
 
         else:
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}")

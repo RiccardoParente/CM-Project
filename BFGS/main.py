@@ -26,7 +26,7 @@ class MSE:
         return np.mean(np.power(targets - outputs, 2))
 
     def derivative(self, outputs, targets):
-        return (targets - outputs)
+        return -2*(targets - outputs)
     
 if __name__ == '__main__':
     input_size_bce = 6
@@ -35,17 +35,17 @@ if __name__ == '__main__':
     input_size_mse = 12
     hidden_size_mse = 8
     output_size_mse = 3
-    max_iterations = 10
-    tolerance = 1e-8
+    max_iterations = 100
+    tolerance = 1e-4
 
-    data_bce = np.loadtxt("../datasets/MONK/monks-3.train", delimiter=" ", dtype=str)
+    data_bce = np.loadtxt("datasets/MONK/monks-3.train", delimiter=" ", dtype=str)
     data_bce = data_bce[:, 1:-1]
     data_bce = data_bce.astype(int)
 
     X_bce = data_bce[:, 1:]
     y_bce = data_bce[:, 0].reshape(-1, 1) 
 
-    data_mse = np.loadtxt("../datasets/CUP/ML-CUP24-TR.csv", delimiter=",")
+    data_mse = np.loadtxt("datasets/CUP/ML-CUP24-TR.csv", delimiter=",")
 
     X_mse = data_mse[:, 1:-3]
     scaler = StandardScaler()
@@ -61,33 +61,23 @@ if __name__ == '__main__':
 
     loss_mse = nn_mse.train(X_mse_normalized, y_mse_normalized, max_iter=max_iterations, tol=tolerance)
 
-    data_bce = np.loadtxt("../datasets/MONK/monks-3.test", delimiter=" ", dtype=str)
-    data_bce = data_bce[:, 1:-1]
-    data_bce = data_bce.astype(int)
-
-    X_bce = data_bce[:, 1:]
-    y_bce = data_bce[:, 0].reshape(-1, 1) 
-    print("\nMSE:")
-    predictions = nn_bce.forward(X_bce)
-    print(np.mean(np.power(y_bce - predictions, 2)))
-
     plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
     plt.plot(loss_bce, label='Loss BCE')
     plt.title('Loss BCE durante il training')
-    plt.xlabel('Campioni')
+    plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.grid(True)
     plt.legend()
-
+    
     plt.subplot(1, 2, 2)
     plt.plot(loss_mse, label='Loss MSE', color='orange')
     plt.title('Loss MSE durante il training')
-    plt.xlabel('Campioni')
+    plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.grid(True)
     plt.legend()
-
+    
     plt.tight_layout()
     plt.show()
