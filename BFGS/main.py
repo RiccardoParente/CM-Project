@@ -35,7 +35,7 @@ if __name__ == '__main__':
     input_size_mse = 12
     hidden_size_mse = 8
     output_size_mse = 3
-    max_iterations = 100
+    max_iterations = 200
     tolerance = 1e-4
 
     data_bce = np.loadtxt("datasets/MONK/monks-3.train", delimiter=" ", dtype=str)
@@ -53,18 +53,31 @@ if __name__ == '__main__':
     y_mse = data_mse[:, -3:]
     y_mse_normalized = scaler.fit_transform(y_mse)
 
-    nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE())
+    losses_bce = []
+    losses_mse = []
 
-    loss_bce = nn_bce.train(X_bce, y_bce, max_iter=max_iterations, tol=tolerance)
+    trials = 5
 
-    nn_mse = NeuralNetworkBFGS_MSE(input_size_mse, hidden_size_mse, output_size_mse, MSE())
+    for i in range(trials):
 
-    loss_mse = nn_mse.train(X_mse_normalized, y_mse_normalized, max_iter=max_iterations, tol=tolerance)
+        nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE())
+
+        loss_bce = nn_bce.train(X_bce, y_bce, max_iter=max_iterations, tol=tolerance)
+        losses_bce.append(loss_bce)
+
+        nn_mse = NeuralNetworkBFGS_MSE(input_size_mse, hidden_size_mse, output_size_mse, MSE())
+
+        loss_mse = nn_mse.train(X_mse_normalized, y_mse_normalized, max_iter=max_iterations, tol=tolerance)
+        losses_mse.append(loss_mse)
 
     plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
-    plt.plot(loss_bce, label='Loss BCE')
+    for l in losses_bce:
+        plt.plot(l, alpha = 0.5 if trials != 1 else 1)
+
+    if trials != 1:
+        plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title('Loss BCE durante il training')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
@@ -72,7 +85,11 @@ if __name__ == '__main__':
     plt.legend()
     
     plt.subplot(1, 2, 2)
-    plt.plot(loss_mse, label='Loss MSE', color='orange')
+    for l in losses_mse:
+        plt.plot(l, alpha = 0.5 if trials != 1 else 1)
+
+    if trials != 1:
+        plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title('Loss MSE durante il training')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')

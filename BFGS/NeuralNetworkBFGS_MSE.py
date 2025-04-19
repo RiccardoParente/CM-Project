@@ -142,8 +142,19 @@ class NeuralNetworkBFGS_MSE:
 
         for i in range(20):
             alpha_i = (alpha_low + alpha_high) / 2.0
-            phi_i = phi(params,alpha_i)
-            dphi_i = dphi(params, alpha_i)
+            loss = 0
+            grads = 0
+            params_temp = params + alpha_i * p_k
+            self.unflatten_params(params_temp)
+            for j in range(X_train.shape[0]):
+                x = X_train[j]
+                y = y_train[j]
+                predicted_out = self.forward(x)
+                loss += self.loss.compute(predicted_out, y)
+                grads += self.compute_gradients(x, y)
+            phi_i = loss/X_train.shape[0]
+            grads /= X_train.shape[0]
+            dphi_i = np.dot(grads, p_k)
 
             # Check sufficient decrease
             if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
@@ -168,15 +179,19 @@ class NeuralNetworkBFGS_MSE:
         t = 1
         gradients = 0
         self.current_loss = 0
+        best_gradient = [float('inf')]
+        best_iter = 0
 
         for k in range(max_iter):
             indices = np.random.permutation(len(X_train))
             X_train = X_train[indices]
             y_train = y_train[indices]
+            self.unflatten_params(params)
+            gradients = 0
+            self.current_loss = 0
             for j in range(X_train.shape[0]):
                 x = X_train[j]
                 y = y_train[j]
-                self.unflatten_params(params)
                 y_predicted = self.forward(x)
                 self.current_loss += self.loss.compute(y_predicted, y)+0.005*np.linalg.norm(params)
                 gradients += self.compute_gradients(x, y)
@@ -184,8 +199,13 @@ class NeuralNetworkBFGS_MSE:
             gradients /= X_train.shape[0]
             self.current_loss /= X_train.shape[0]
             history.append(self.current_loss)
+
+            if np.linalg.norm(gradients) < np.linalg.norm(best_gradient):
+                best_gradient = gradients
+                best_iter = k
+
             if np.linalg.norm(gradients) < tol:
-                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}")
+                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
                 break
 
             p_k = np.zeros_like(gradients)
@@ -203,7 +223,7 @@ class NeuralNetworkBFGS_MSE:
                 H_block = H_k_blocks['output'][i]
                 p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
 
-            alpha_k = self.line_search_wolfe(p_k, gradients, x, y, t, T)
+            alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train, t, T)
 
             params_new = params + (alpha_k * p_k) - (0.005*params)
             self.unflatten_params(params_new)
@@ -223,7 +243,7 @@ class NeuralNetworkBFGS_MSE:
             params = params_new
 
         else:
-            print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}")
+            print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
         return history
