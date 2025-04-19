@@ -225,7 +225,7 @@ class NeuralNetworkBFGS_MSE:
 
             alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train, t, T)
 
-            params_new = params + (alpha_k * p_k) - (0.005*params)
+            params_new = params + (alpha_k * p_k) - (0.001*params)
             self.unflatten_params(params_new)
 
             s_k = params_new - params
