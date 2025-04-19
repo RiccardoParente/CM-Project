@@ -180,7 +180,7 @@ class NeuralNetworkBFGS_BCE:
                 x = X_train[j]
                 y = y_train[j]
                 y_predicted = self.forward(x)
-                self.current_loss += self.loss.compute(y_predicted, y)
+                self.current_loss += self.loss.compute(y_predicted, y)+0.001*np.linalg.norm(params)
                 gradients += self.compute_gradients(x, y)
 
             gradients /= X_train.shape[0]
