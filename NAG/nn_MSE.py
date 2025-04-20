@@ -31,6 +31,8 @@ class NeuralNetworkMSE:
 
 
     def train(self, X, y):
+        T = len(X )* self.epochs
+        t = 1
         loss_mse = []
         prev_loss = None
         patience = 10
@@ -53,7 +55,13 @@ class NeuralNetworkMSE:
                 output = net_output
 
                 # Compute Loss
-                loss = self.compute_mse(output, y[i])
+                w_total = np.concatenate([
+                    self.w1.flatten(),
+                    self.b1.flatten(),
+                    self.w3.flatten(),
+                    self.b3.flatten()
+                ])
+                loss = self.compute_mse(output, y[i]) + 0.1*np.sum(w_total**2)
                 loss_mse.append(loss)
 
                 # Controllo divergenza
@@ -76,7 +84,7 @@ class NeuralNetworkMSE:
                 prev_loss = loss
 
                 # Backward propagation
-                sigma_output = y[i] - output 
+                sigma_output = y[i] - output
                 delta_w3 = sigma_output[:, np.newaxis] * act1
                 delta_b3 = sigma_output
                 #print(delta_w3)
@@ -95,12 +103,12 @@ class NeuralNetworkMSE:
                 #print(delta_b1)
 
                 # Update weights and biases
-                self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-                self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
+                self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1) - (2*0.1*self.w1))
+                self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1) - (2*0.1*self.b1))
                 #self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
                 #self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
-                self.w3 = self.w3 + ((self.learning_rate * delta_w3) + (self.momentum * self.v_w3))
-                self.b3 = self.b3 + ((self.learning_rate * delta_b3) + (self.momentum * self.v_b3))
+                self.w3 = self.w3 + ((self.learning_rate * delta_w3) + (self.momentum * self.v_w3) - (2*0.1*self.w3))
+                self.b3 = self.b3 + ((self.learning_rate * delta_b3) + (self.momentum * self.v_b3) - (2*0.1*self.b3))
 
                 # Update velocity
                 self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
@@ -109,6 +117,9 @@ class NeuralNetworkMSE:
                 #self.v_b2 = ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
                 self.v_w3 = ((self.learning_rate * delta_w3) + (self.momentum * self.v_w3))
                 self.v_b3 = ((self.learning_rate * delta_b3) + (self.momentum * self.v_b3))
+
+                self.momentum = self.momentum *(1 - (t/T))
+                t+=1
 
             if end:
                 break

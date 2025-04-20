@@ -31,7 +31,7 @@ class NeuralNetworkBCE:
         prev_loss = None
         patience = 10
         patience_counter = 0
-        tolerance = 1e-2
+        tolerance = 1e-4
         end = False
         for j in range(self.epochs):
             indices = np.random.permutation(len(X))
@@ -47,7 +47,13 @@ class NeuralNetworkBCE:
                 output = self.sigmoid(net_output)
 
                 # Compute Loss
-                loss = self.compute_bce(output, y[i])
+                w_total = np.concatenate([
+                    self.w1.flatten(),
+                    self.b1.flatten(),
+                    self.w2.flatten(),
+                    self.b2.flatten()
+                ])
+                loss = self.compute_bce(output, y[i]) + 0.1*np.sum(w_total**2)
                 loss_bce.append(loss)
 
                 # Controllo divergenza
@@ -79,10 +85,10 @@ class NeuralNetworkBCE:
                 delta_b1 = sigma_hidden.reshape(-1)
 
                 # Update weights and biases
-                self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-                self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
-                self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
-                self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+                self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1) - (2*0.1*self.w1))
+                self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1) - (2*0.1*self.b1))
+                self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2) - (2*0.1*self.w2))
+                self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2) - (2*0.1*self.b2))
 
                 # Update velocity
                 self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
