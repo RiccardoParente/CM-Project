@@ -2,12 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from nn_BCE import NeuralNetworkBCE
 from nn_MSE import NeuralNetworkMSE
+from sklearn.preprocessing import StandardScaler
 
 # --- Caricamento dataset da CSV --- #
 # Dataset BCE: 6 input, 1 target
 data_bce = np.loadtxt("datasets/MONK/monks-3.train", delimiter=" ", dtype=str)
 data_bce = data_bce[:, 1:-1]
 data_bce = data_bce.astype(int)
+
+scaler = StandardScaler()
 
 X_bce = data_bce[:, 1:]
 y_bce = data_bce[:, 0].reshape(-1, 1) 
@@ -16,7 +19,9 @@ y_bce = data_bce[:, 0].reshape(-1, 1)
 data_mse = np.loadtxt("datasets/CUP/ML-CUP24-TR.csv", delimiter=",")
 
 X_mse = data_mse[:, 1:-3]
+X_mse_normalized = scaler.fit_transform(X_mse)
 y_mse = data_mse[:, -3:]
+y_mse_normalized = scaler.fit_transform(y_mse)
 
 
 # --- Istanziamento modelli --- #
@@ -26,24 +31,25 @@ model_bce = NeuralNetworkBCE(
     output_size=1,
     learning_rate=0.01,
     momentum=0.9,
-    epochs=100
+    epochs=10000
 )
 model_bce.print_structure()
 
 model_mse = NeuralNetworkMSE(
     input_size=12,
-    hidden_sizes=[16, 8],
+    hidden_sizes=[8],
     output_size=3,
     learning_rate=0.01,
     momentum=0.9,
-    epochs=100
+    epochs=10000
 )
 model_mse.print_structure()
 
 # --- Training --- #
 loss_bce = model_bce.train(X_bce, y_bce)
-
-#loss_mse = model_mse.train(X_mse, y_mse)
+print(loss_bce[-1])
+loss_mse = model_mse.train(X_mse_normalized, y_mse_normalized)
+print(loss_mse[-1])
 
 # --- Plot --- #
 plt.figure(figsize=(12, 5))
@@ -55,7 +61,7 @@ plt.xlabel('Epoca')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-'''
+
 plt.subplot(1, 2, 2)
 plt.plot(loss_mse, label='Loss MSE', color='orange')
 plt.title('Loss MSE durante il training')
@@ -63,6 +69,6 @@ plt.xlabel('Epoca')
 plt.ylabel('Loss')
 plt.grid(True)
 plt.legend()
-'''
+
 plt.tight_layout()
 plt.show()

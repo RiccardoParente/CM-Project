@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetworkBCE:
     def __init__(self, input_size, hidden_sizes, output_size, learning_rate, momentum, epochs):
-        np.random.seed(200)
+        np.random.seed(45)
         
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes  # lista con i neuroni dei layer nascosti
@@ -28,8 +28,16 @@ class NeuralNetworkBCE:
         loss_bce = []
         T = len(X)
         t = 1
+        prev_loss = None
+        patience = 50
+        patience_counter = 0
+        tolerance = 1e-6
+        end = False
         for i in range(self.epochs):
-            np.random.shuffle(X)
+            indices = np.random.permutation(len(X))
+            X = X[indices]
+            y = y[indices]
+            
             w1_pre, b1_pre, w2_pre, b2_pre = self.anticipate_weights()
 
             # Forward propagation
@@ -38,8 +46,35 @@ class NeuralNetworkBCE:
             net_output = np.dot(w2_pre, act.T).T + b2_pre
             output = self.sigmoid(net_output)
             
-            loss = self.compute_bce(output, y)
+            w_total = np.concatenate([
+                    self.w1.flatten(),
+                    self.b1.flatten(),
+                    self.w2.flatten(),
+                    self.b2.flatten()
+                ])
+            loss = self.compute_bce(output, y) + 0.1*np.sum(w_total**2)
             loss_bce.append(loss)
+
+            # Controllo divergenza
+            if np.isnan(loss) or loss > 1e5:
+                print("❌ Loss diverging. Stopping.")
+                end = True
+                break
+
+            # Controllo convergenza
+            if prev_loss is not None:
+                if abs(loss - prev_loss) < tolerance:
+                    patience_counter += 1
+                    if patience_counter >= patience:
+                        print("✅ Loss converged. Stopping.")
+                        print(self.momentum)
+                        end = True
+                        break
+                else:
+                    patience_counter = 0
+
+            prev_loss = loss
+
 
             # Backward propagation
             sigma_output = y - output
@@ -52,10 +87,10 @@ class NeuralNetworkBCE:
             
 
             # Update weights and biases
-            self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
-            self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1))
-            self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2))
-            self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2))
+            self.w1 = self.w1 + ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1) - (2*0.1*self.w1))
+            self.b1 = self.b1 + ((self.learning_rate * delta_b1) + (self.momentum * self.v_b1) - (2*0.1*self.b1))
+            self.w2 = self.w2 + ((self.learning_rate * delta_w2) + (self.momentum * self.v_w2) - (2*0.1*self.w2))
+            self.b2 = self.b2 + ((self.learning_rate * delta_b2) + (self.momentum * self.v_b2) - (2*0.1*self.b2))
 
             # Update velocity and momentum
             self.v_w1 = ((self.learning_rate * delta_w1) + (self.momentum * self.v_w1))
@@ -65,6 +100,7 @@ class NeuralNetworkBCE:
 
             self.momentum = self.momentum *(1 - (t/T))
             t+=1
+            
             
         return loss_bce
 
