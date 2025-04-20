@@ -1,6 +1,6 @@
 import numpy as np
 
-class NeuralNetworkBFGS:
+class NeuralNetworkBFGS_MSE:
     def __init__(self, input_size, hidden_size, output_size, loss):
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -8,29 +8,30 @@ class NeuralNetworkBFGS:
         self.loss = loss
 
         # Initialize weights and biases randomly
-        self.wh = np.random.randn(self.input_size, self.hidden_size)
+        self.wh = np.random.randn(self.input_size, self.hidden_size) * np.sqrt(2.0 / input_size)
         self.bh = np.zeros(self.hidden_size)
-        self.wo = np.random.randn(self.hidden_size, self.output_size)
+        self.wo = np.random.randn(self.hidden_size, self.output_size) * np.sqrt(2.0 / hidden_size)
         self.bo = np.zeros(self.output_size)
 
         self.hidden_param_size = input_size + 1  # Weights + bias for each hidden neuron
         self.output_param_size = hidden_size + 1 # Weights + bias for each output neuron
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        s = self.sigmoid(x)
-        return s * (1 - s)
+    def leacky_relu(self, z):
+        alpha = 0.01
+        return np.maximum(alpha * z, z)
+    
+    def leacky_relu_derivative(self, a):
+        alpha = 0.01
+        return np.where(a > 0, 1, alpha)
 
     def forward(self, X):
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh
-        self.hidden_output = self.sigmoid(self.net_h)
+        self.hidden_output = self.leacky_relu(self.net_h)
 
         # Output layer
         self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
-        self.predicted_output = self.sigmoid(self.net_o)
+        self.predicted_output = self.net_o
         return self.predicted_output
 
     def flatten_params(self):
@@ -62,18 +63,18 @@ class NeuralNetworkBFGS:
         self.bo = np.array(bo_temp)
 
     def compute_gradients(self, X, y):
-        output_delta = np.multiply(self.loss.derivative(self.predicted_output, y), self.sigmoid_derivative(self.net_o))   
-        hidden_delta = np.multiply(np.dot(output_delta, self.wo.T), self.sigmoid_derivative(self.net_h))
-        grad_wo = np.dot(self.hidden_output.T, output_delta)
-        grad_bo = np.sum(output_delta, axis=0)
-        grad_wh = np.dot(X.T, hidden_delta)
-        grad_bh = np.sum(hidden_delta, axis=0)
+        output_delta = self.loss.derivative(self.predicted_output, y)
+        hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
+        grad_wo = self.hidden_output.T * output_delta[:, np.newaxis]
+        grad_bo = output_delta
+        grad_wh = X.T * hidden_delta[:, np.newaxis]
+        grad_bh = hidden_delta
 
         output = np.array([])
         for i in range(self.hidden_size):
-            output = np.concatenate((output, grad_wh[:,i], [grad_bh[i]]))
+            output = np.concatenate((output, grad_wh[i], [grad_bh[i]]))
         for i in range(self.output_size):
-            output = np.concatenate((output, grad_wo[:,i], [grad_bo[i]]))
+            output = np.concatenate((output, grad_wo[i], [grad_bo[i]]))
         return output
     
     def initialize_hessian(self):
@@ -100,14 +101,15 @@ class NeuralNetworkBFGS:
             s_k_block = s_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
             y_k_block = y_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
+        return H_k_blocks
 
-    def update_block(self, H_k, s_k, y_k, epsilon=1e-8):
+    def update_block(self, H_k, s_k, y_k, epsilon=1e-4):
         '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
-        s_k_dot_y_k = np.dot(s_k_t, y_k)[0, 0]
+        s_k_dot_y_k = np.dot(y_k_t, s_k)[0, 0]
 
-        if s_k_dot_y_k > epsilon: #check division by zero
+        if s_k_dot_y_k > epsilon:
             rho_k = 1.0 / s_k_dot_y_k
             I = np.eye(H_k.shape[0])
             term1 = (I - rho_k * np.dot(s_k, y_k_t))
@@ -116,17 +118,17 @@ class NeuralNetworkBFGS:
             return np.dot(term1, np.dot(H_k, term2)) + term3
         return H_k
     
-    def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, c1=1e-4, c2=0.9, max_alpha=1.0):
+    def line_search_wolfe(self, p_k, grad_f_k, X_train, y_train, t, T, c1=1e-4, c2=0.9, max_alpha=1.0):
         '''Wolfe line search'''
 
-        def phi(alpha):
-            params_temp = self.flatten_params() + alpha * p_k
+        def phi(params, alpha):
+            params_temp = params + alpha * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
-            return self.loss.compute(self.predicted_output, y_train)
+            return self.loss.compute(self.predicted_output, y_train)+0.005*np.linalg.norm(params_temp)
 
-        def dphi(alpha):
-            params_temp = self.flatten_params() + alpha * p_k
+        def dphi(params, alpha):
+            params_temp = params + alpha * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
             return np.dot(self.compute_gradients(X_train, y_train), p_k)
@@ -135,11 +137,24 @@ class NeuralNetworkBFGS:
         alpha_high = max_alpha
         phi_prev = self.current_loss
         dphi_prev = np.dot(grad_f_k, p_k)
+        params = self.flatten_params()
+        alpha_i = 0
 
-        for i in range(100):
+        for i in range(20):
             alpha_i = (alpha_low + alpha_high) / 2.0
-            phi_i = phi(alpha_i)
-            dphi_i = dphi(alpha_i)
+            loss = 0
+            grads = 0
+            params_temp = params + alpha_i * p_k
+            self.unflatten_params(params_temp)
+            for j in range(X_train.shape[0]):
+                x = X_train[j]
+                y = y_train[j]
+                predicted_out = self.forward(x)
+                loss += self.loss.compute(predicted_out, y)
+                grads += self.compute_gradients(x, y)
+            phi_i = loss/X_train.shape[0]
+            grads /= X_train.shape[0]
+            dphi_i = np.dot(grads, p_k)
 
             # Check sufficient decrease
             if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
@@ -154,22 +169,43 @@ class NeuralNetworkBFGS:
             else:
                 alpha_high = alpha_i
 
-        return 0.001
+        return alpha_i*(1-(t/T))
 
-    def train(self, X_train, y_train, max_iter=100, tol=1e-6):
+    def train(self, X_train, y_train, max_iter=100, tol=1e-4):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
+        T = max_iter
+        t = 1
+        gradients = 0
+        self.current_loss = 0
+        best_gradient = [float('inf')]
+        best_iter = 0
 
         for k in range(max_iter):
+            indices = np.random.permutation(len(X_train))
+            X_train = X_train[indices]
+            y_train = y_train[indices]
             self.unflatten_params(params)
-            y_predicted = self.forward(X_train)
-            self.current_loss = self.loss.compute(y_train, y_predicted)
-            gradients = self.compute_gradients(X_train, y_train)
+            gradients = 0
+            self.current_loss = 0
+            for j in range(X_train.shape[0]):
+                x = X_train[j]
+                y = y_train[j]
+                y_predicted = self.forward(x)
+                self.current_loss += self.loss.compute(y_predicted, y)+0.001*np.linalg.norm(params)
+                gradients += self.compute_gradients(x, y)
+
+            gradients /= X_train.shape[0]
+            self.current_loss /= X_train.shape[0]
             history.append(self.current_loss)
 
+            if np.linalg.norm(gradients) < np.linalg.norm(best_gradient):
+                best_gradient = gradients
+                best_iter = k
+
             if np.linalg.norm(gradients) < tol:
-                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}")
+                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
                 break
 
             p_k = np.zeros_like(gradients)
@@ -187,14 +223,19 @@ class NeuralNetworkBFGS:
                 H_block = H_k_blocks['output'][i]
                 p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
 
-            alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train)
+            alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train, t, T)
 
-            params_new = params + (alpha_k * p_k)
+            params_new = params + (alpha_k * p_k) - (0.001*params)
             self.unflatten_params(params_new)
 
             s_k = params_new - params
-            self.forward(X_train)
-            gradients_new = self.compute_gradients(X_train, y_train)
+            gradients_new = 0
+            for j in range(X_train.shape[0]):
+                x = X_train[j]
+                y = y_train[j]
+                y_predicted = self.forward(x)
+                gradients_new += self.compute_gradients(x, y)
+            gradients_new /= X_train.shape[0]
             y_k = gradients_new - gradients
 
             self.update_hessian(H_k_blocks, s_k, y_k)
@@ -202,7 +243,7 @@ class NeuralNetworkBFGS:
             params = params_new
 
         else:
-            print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}")
+            print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
         return history

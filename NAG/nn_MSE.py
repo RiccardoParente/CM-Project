@@ -144,8 +144,8 @@ class NeuralNetworkMSE:
         print(f"Pesos (w1): \n{self.w1}")
         print(f"Bias (b1): \n{self.b1}")
         
-        print(f"\nLayer 2 (hidden1 -> hidden2):")
-        print(f"Pesos (w2): \n{self.w2}")
-        print(f"Bias (b2): \n{self.b2}")
+        #print(f"\nLayer 2 (hidden1 -> hidden2):")
+        #print(f"Pesos (w2): \n{self.w2}")
+        #print(f"Bias (b2): \n{self.b2}")
         
         

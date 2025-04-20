@@ -104,7 +104,10 @@ class NeuralNetworkBCE:
             
         return loss_bce
 
+            if end:
+                break
 
+        return loss_bce
 
 
     def compute_bce(self,output,y):
