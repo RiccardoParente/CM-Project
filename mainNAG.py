@@ -22,11 +22,10 @@ for i in range(trials):
         hidden_size=8,
         output_size=1,
         loss=BCE(),
-        regularization=0.1,
+        regularization=0,
         momentum=0.9,
-        learning_rate=0.01,
+        learning_rate=0.1,
     )
-    model_bce.print_structure()
 
     model_mse = NeuralNetworkNAG_MSE(
         input_size=12,
@@ -37,7 +36,6 @@ for i in range(trials):
         momentum=0.9,
         learning_rate=0.01,
     )
-    model_mse.print_structure()
 
     # --- Training --- #
     loss_bce = model_bce.train(X_bce, y_bce, epochs=10000)

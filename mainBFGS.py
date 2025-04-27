@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     for i in range(trials):
 
-        nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), regularization)
+        nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), 0)
 
         loss_bce = nn_bce.train(X_bce, y_bce, epochs=epochs, tol=tolerance)
         losses_bce.append(loss_bce)
