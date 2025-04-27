@@ -60,17 +60,17 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
             delta_wh = np.dot(X.T, sigma_hidden) / X.shape[0]
             delta_bh = sum(sigma_hidden) / X.shape[0]
             
-            # Update weights and biases
-            self.wh = self.wh + ((self.learning_rate * delta_wh) + (self.momentum * self.v_wh) - (2*self.regularization*self.wh))
-            self.bh = self.bh + ((self.learning_rate * delta_bh) + (self.momentum * self.v_bh) - (2*self.regularization*self.bh))
-            self.wo = self.wo + ((self.learning_rate * delta_wo) + (self.momentum * self.v_wo) - (2*self.regularization*self.wo))
-            self.bo = self.bo + ((self.learning_rate * delta_bo) + (self.momentum * self.v_bo) - (2*self.regularization*self.bo))
-
-            # Update velocity and momentum
+            # Update velocity
             self.v_wh = ((self.learning_rate * delta_wh) + (self.momentum * self.v_wh))
             self.v_bh = ((self.learning_rate * delta_bh) + (self.momentum * self.v_bh))
             self.v_wo = ((self.learning_rate * delta_wo) + (self.momentum * self.v_wo))
             self.v_bo = ((self.learning_rate * delta_bo) + (self.momentum * self.v_bo))
+
+            # Update weights and biases
+            self.wh = self.wh + self.v_wh - (2*self.regularization*self.wh)
+            self.bh = self.bh + self.v_bh - (2*self.regularization*self.bh)
+            self.wo = self.wo + self.v_wo - (2*self.regularization*self.wo)
+            self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
 
             self.momentum = self.momentum *(1 - (t/T))
             t+=1

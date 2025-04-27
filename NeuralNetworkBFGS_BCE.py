@@ -131,7 +131,7 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
             y_train = y_train[indices]
             self.unflatten_params(params)
             self.forward(X_train)
-            self.current_loss = self.loss.compute(self.predicted_output, y_train) / X_train.shape[0] + self.regularization*np.linalg.norm(params)
+            self.current_loss = self.loss.compute(self.predicted_output, y_train) + self.regularization*np.linalg.norm(params)
             gradients = self.compute_gradients(X_train, y_train) / X_train.shape[0]
             history.append(self.current_loss)
 

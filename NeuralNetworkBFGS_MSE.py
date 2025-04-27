@@ -25,9 +25,9 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
         output_delta = self.loss.derivative(self.predicted_output, y)
         hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
         grad_wo = np.dot(self.hidden_output.T, output_delta)
-        grad_bo = sum(output_delta)
+        grad_bo = np.sum(output_delta, axis=0)
         grad_wh = np.dot(X.T, hidden_delta)
-        grad_bh = sum(hidden_delta)
+        grad_bh = np.sum(hidden_delta, axis=0)
 
         output = np.array([])
         for i in range(self.hidden_size):
@@ -132,12 +132,12 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             y_train = y_train[indices]
             self.unflatten_params(params)
             self.forward(X_train)
-            self.current_loss = self.loss.compute(self.predicted_output, y_train) / X_train.shape[0] + self.regularization*np.linalg.norm(params)
+            self.current_loss = self.loss.compute(self.predicted_output, y_train) + self.regularization*np.linalg.norm(params)
             gradients = self.compute_gradients(X_train, y_train) / X_train.shape[0]
             history.append(self.current_loss)
 
             # Controllo divergenza
-            if np.isnan(self.current_loss) or self.current_loss > 1e5:
+            if np.isnan(self.current_loss) or self.current_loss > 1e10:
                 print("❌ Loss diverging. Stopping.")
                 break
 

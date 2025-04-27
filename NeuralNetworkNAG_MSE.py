@@ -54,23 +54,24 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
             # Backward propagation
             sigma_output = -self.loss.derivative(output, y)
             delta_wo = np.dot(hidden_output.T, sigma_output) / X.shape[0]
-            delta_bo = sum(sigma_output) / X.shape[0]
+            delta_bo = np.sum(sigma_output, axis=0) / X.shape[0]
     
             sigma_hidden = np.dot(sigma_output, wo_pre.T) * self.leacky_relu_derivative(net_hidden)
             delta_wh = np.dot(X.T, sigma_hidden) / X.shape[0]
-            delta_bh = sum(sigma_hidden) / X.shape[0]
-
-            # Update weights and biases
-            self.wh = self.wh + ((self.learning_rate * delta_wh) + (self.momentum * self.v_wh) - (2*self.regularization*self.wh))
-            self.bh = self.bh + ((self.learning_rate * delta_bh) + (self.momentum * self.v_bh) - (2*self.regularization*self.bh))
-            self.wo = self.wo + ((self.learning_rate * delta_wo) + (self.momentum * self.v_wo) - (2*self.regularization*self.wo))
-            self.bo = self.bo + ((self.learning_rate * delta_bo) + (self.momentum * self.v_bo) - (2*self.regularization*self.bo))
+            delta_bh = np.sum(sigma_hidden, axis=0) / X.shape[0]
 
             # Update velocity
             self.v_wh = ((self.learning_rate * delta_wh) + (self.momentum * self.v_wh))
             self.v_bh = ((self.learning_rate * delta_bh) + (self.momentum * self.v_bh))
             self.v_wo = ((self.learning_rate * delta_wo) + (self.momentum * self.v_wo))
             self.v_bo = ((self.learning_rate * delta_bo) + (self.momentum * self.v_bo))
+
+            # Update weights and biases
+            self.wh = self.wh + self.v_wh - (2*self.regularization*self.wh)
+            self.bh = self.bh + self.v_bh - (2*self.regularization*self.bh)
+            self.wo = self.wo + self.v_wo - (2*self.regularization*self.wo)
+            self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
+            print("\n\nWeights and biases after update:")
             print(self.wh, self.bh, self.wo, self.bo)
 
         return loss_mse
