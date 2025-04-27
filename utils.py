@@ -9,8 +9,8 @@ def plot_losses(losses_bce, losses_mse):
     for l in losses_bce:
         plt.plot(l, alpha = 0.5 if len(losses_bce) != 1 else 1)
 
-    if len(losses_bce) != 1:
-        plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
+    #if len(losses_bce) != 1:
+        #plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title('Loss BCE durante il training')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
@@ -21,8 +21,8 @@ def plot_losses(losses_bce, losses_mse):
     for l in losses_mse:
         plt.plot(l, alpha = 0.5 if len(losses_mse) != 1 else 1)
 
-    if len(losses_mse) != 1:
-        plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
+    #if len(losses_mse) != 1:
+        #plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title('Loss MSE durante il training')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
