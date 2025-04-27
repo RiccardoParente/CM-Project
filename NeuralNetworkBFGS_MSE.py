@@ -156,9 +156,9 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                     best_gradient = gradients
                     best_iter = k
 
-                if np.linalg.norm(gradients) < tol:
-                    print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
-                    break
+                #if np.linalg.norm(gradients) < tol:
+                    #print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
+                    #break
 
                 p_k = np.zeros_like(gradients)
 
