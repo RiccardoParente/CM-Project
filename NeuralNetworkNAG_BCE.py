@@ -3,7 +3,7 @@ from NeuralNetwork import NeuralNetwork
 
 class NeuralNetworkNAG_BCE(NeuralNetwork):
     def __init__(self, input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum):
-        super().__init__(input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum)
+        super().__init__(input_size, hidden_size, output_size, loss, regularization, momentum, learning_rate)
         # inizializza le velocità dei pesi a zero
         self.v_wh = np.zeros_like(self.wh)
         self.v_bh = np.zeros_like(self.bh)

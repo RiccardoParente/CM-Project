@@ -86,7 +86,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             params_temp = params + alpha_i * p_k
             self.unflatten_params(params_temp)
             self.forward(X_train)
-            phi_i = self.loss.compute(self.predicted_output, y_train) / X_train.shape[0] + self.regularization*np.linalg.norm(params)
+            phi_i = self.loss.compute(self.predicted_output, y_train) + self.regularization*np.linalg.norm(params)
             grads = self.compute_gradients(X_train, y_train) / X_train.shape[0]
             dphi_i = np.dot(grads, p_k)
 
@@ -129,7 +129,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             history.append(self.current_loss)
 
             # Controllo divergenza
-            if np.isnan(self.current_loss) or self.current_loss > 1e10:
+            if np.isnan(self.current_loss) or self.current_loss > 1e5:
                 print("❌ Loss diverging. Stopping.")
                 break
 

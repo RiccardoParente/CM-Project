@@ -3,7 +3,7 @@ from NeuralNetwork import NeuralNetwork
 
 class NeuralNetworkNAG_MSE(NeuralNetwork):
     def __init__(self, input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum):
-        super().__init__(input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum)
+        super().__init__(input_size, hidden_size, output_size, loss, regularization, momentum, learning_rate )
         # inizializza le velocità dei pesi a zero
         self.v_wh = np.zeros_like(self.wh)
         self.v_bh = np.zeros_like(self.bh)
@@ -71,8 +71,6 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
             self.bh = self.bh + self.v_bh - (2*self.regularization*self.bh)
             self.wo = self.wo + self.v_wo - (2*self.regularization*self.wo)
             self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
-            print("\n\nWeights and biases after update:")
-            print(self.wh, self.bh, self.wo, self.bo)
 
         return loss_mse
 

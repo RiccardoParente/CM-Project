@@ -23,8 +23,8 @@ for i in range(trials):
         output_size=1,
         loss=BCE(),
         regularization=0.1,
-        learning_rate=0.01,
         momentum=0.9,
+        learning_rate=0.01,
     )
     model_bce.print_structure()
 
@@ -34,8 +34,8 @@ for i in range(trials):
         output_size=3,
         loss=MSE(),
         regularization=0.1,
-        learning_rate=0.01,
         momentum=0.9,
+        learning_rate=0.01,
     )
     model_mse.print_structure()
 
