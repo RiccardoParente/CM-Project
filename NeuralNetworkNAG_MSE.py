@@ -76,14 +76,6 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
 
         return loss_mse
 
-    def leacky_relu(self, z):
-        alpha = 0.01
-        return np.maximum(alpha * z, z)
-    
-    def leacky_relu_derivative(self, a):
-        alpha = 0.01
-        return np.where(a > 0, 1, alpha)
-    
     # Funzione per anticipare i pesi (pre-update dei pesi)
     def anticipate_weights(self):
         # Calcolare i pesi anticipati con la velocità

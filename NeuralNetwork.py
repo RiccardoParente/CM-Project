@@ -46,6 +46,21 @@ class NeuralNetwork:
         self.wo = np.array(wo_temp).reshape(self.hidden_size, self.output_size)
         self.bo = np.array(bo_temp)
 
+    def leacky_relu(self, z):
+        alpha = 0.01
+        return np.maximum(alpha * z, z)
+    
+    def leacky_relu_derivative(self, a):
+        alpha = 0.01
+        return np.where(a > 0, 1, alpha)
+    
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        s = self.sigmoid(x)
+        return s * (1 - s)
+
     # Metodo per stampare la struttura della rete
     def print_structure(self):
         print(f"Struttura della rete neurale:")

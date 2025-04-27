@@ -3,14 +3,6 @@ from NeuralNetwork import NeuralNetwork
 
 class NeuralNetworkBFGS_MSE(NeuralNetwork):
 
-    def leacky_relu(self, z):
-        alpha = 0.01
-        return np.maximum(alpha * z, z)
-    
-    def leacky_relu_derivative(self, a):
-        alpha = 0.01
-        return np.where(a > 0, 1, alpha)
-
     def forward(self, X):
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh

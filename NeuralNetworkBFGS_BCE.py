@@ -3,17 +3,10 @@ from NeuralNetwork import NeuralNetwork
 
 class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        s = self.sigmoid(x)
-        return s * (1 - s)
-
     def forward(self, X):
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh
-        self.hidden_output = self.sigmoid(self.net_h)
+        self.hidden_output = self.leacky_relu(self.net_h)
 
         # Output layer
         self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
@@ -22,7 +15,7 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
     def compute_gradients(self, X, y):
         output_delta = self.predicted_output - y
-        hidden_delta = np.dot(output_delta, self.wo.T) * self.sigmoid_derivative(self.net_h)
+        hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
         grad_wo = np.dot(self.hidden_output.T, output_delta)
         grad_bo = sum(output_delta)
         grad_wh = np.dot(X.T, hidden_delta)
