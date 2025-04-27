@@ -1,5 +1,6 @@
 import numpy as np
 from NeuralNetwork import NeuralNetwork
+import time
 
 class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
@@ -81,7 +82,6 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
         for i in range(20):
             alpha_i = (alpha_low + alpha_high) / 2.0
-            loss = 0
             grads = 0
             params_temp = params + alpha_i * p_k
             self.unflatten_params(params_temp)
@@ -119,12 +119,14 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
         exit = False
         x_size = 1 if batch else X_train.shape[0]
         T = epochs*x_size
+        mean_time = 0
 
         for k in range(epochs):
             indices = np.random.permutation(len(X_train))
             X_train = X_train[indices]
             y_train = y_train[indices]
             for i in range(x_size):
+                start_time = time.time()
                 x = X_train if batch else np.array([X_train[i]])
                 y = y_train if batch else y_train[i]
                 self.unflatten_params(params)
@@ -190,10 +192,12 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
                 params = params_new
 
+                mean_time += (time.time() - start_time)
+
             if exit:
                 break
             
         else:
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1} gradient norm: {np.linalg.norm(best_gradient)}")
         self.unflatten_params(params)
-        return history
+        return history, mean_time / T

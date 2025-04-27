@@ -27,12 +27,12 @@ if __name__ == '__main__':
 
         nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), 0)
 
-        loss_bce = nn_bce.train(X_bce, y_bce, epochs=epochs, tol=tolerance, batch=True)
+        loss_bce, mean_time_bce = nn_bce.train(X_bce, y_bce, epochs=epochs, tol=tolerance, batch=True)
         losses_bce.append(loss_bce)
 
         nn_mse = NeuralNetworkBFGS_MSE(input_size_mse, hidden_size_mse, output_size_mse, MSE(), regularization)
 
-        loss_mse = nn_mse.train(X_mse_normalized, y_mse_normalized, epochs=epochs, tol=tolerance, batch=True)
+        loss_mse, mean_time_mse = nn_mse.train(X_mse_normalized, y_mse_normalized, epochs=epochs, tol=tolerance, batch=True)
         losses_mse.append(loss_mse)
 
     plot_losses(losses_bce, losses_mse)

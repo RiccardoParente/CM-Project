@@ -1,5 +1,6 @@
 import numpy as np
 from NeuralNetwork import NeuralNetwork
+import time
 
 class NeuralNetworkNAG_BCE(NeuralNetwork):
     def __init__(self, input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum):
@@ -20,12 +21,14 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
         exit = False
         x_size = 1 if batch else X_train.shape[0]
         T = epochs*x_size
+        mean_time = 0
 
         for i in range(epochs):
             indices = np.random.permutation(len(X_train))
             X_train = X_train[indices]
             y_train = y_train[indices]
             for i in range(x_size):
+                start_time = time.time()
                 x = X_train if batch else np.array([X_train[i]])
                 y = y_train if batch else y_train[i]
 
@@ -82,11 +85,13 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
 
                 self.momentum = self.momentum *(1 - (t/T))
                 t+=1
+
+                mean_time += (time.time() - start_time)
                 
             if exit:
                 break
 
-        return loss_bce
+        return loss_bce, mean_time / T
 
     # Funzione per anticipare i pesi (pre-update dei pesi)
     def anticipate_weights(self):
