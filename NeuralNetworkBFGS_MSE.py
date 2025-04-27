@@ -105,11 +105,10 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
 
         return alpha_i*(1-(t/T))
 
-    def train(self, X_train, y_train, epochs=100, tol=1e-4):
+    def train(self, X_train, y_train, epochs=100, tol=1e-4, batch=False):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
-        T = epochs
         t = 1
         gradients = 0
         self.current_loss = 0
@@ -117,70 +116,81 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
         best_iter = 0
         prev_loss = None
         patience_counter = 0
+        exit = False
+        x_size = 1 if batch else X_train.shape[0]
+        T = epochs*x_size
 
         for k in range(epochs):
             indices = np.random.permutation(len(X_train))
             X_train = X_train[indices]
             y_train = y_train[indices]
-            self.unflatten_params(params)
-            self.forward(X_train)
-            self.current_loss = self.loss.compute(self.predicted_output, y_train) + self.regularization*np.linalg.norm(params)
-            gradients = self.compute_gradients(X_train, y_train) / X_train.shape[0]
-            history.append(self.current_loss)
+            for i in range(x_size):
+                x = X_train if batch else np.array([X_train[i]])
+                y = y_train if batch else y_train[i]
+                self.unflatten_params(params)
+                self.forward(x)
+                self.current_loss = self.loss.compute(self.predicted_output, y) + self.regularization*np.linalg.norm(params)
+                gradients = self.compute_gradients(x, y) / x.shape[0]
+                history.append(self.current_loss)
 
-            # Controllo divergenza
-            if np.isnan(self.current_loss) or self.current_loss > 1e5:
-                print("❌ Loss diverging. Stopping.")
+                # Controllo divergenza
+                if np.isnan(self.current_loss) or self.current_loss > 1e5:
+                    print("❌ Loss diverging. Stopping.")
+                    exit = True
+                    break
+
+                # Controllo convergenza
+                if prev_loss is not None:
+                    if abs(self.current_loss - prev_loss) < tol:
+                        patience_counter += 1
+                        if patience_counter >= 5:
+                            print(f"✅ Loss converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}. Stopping.")
+                            exit = True
+                            break
+                    else:
+                        patience_counter = 0
+
+                prev_loss = self.current_loss
+
+                if np.linalg.norm(gradients) < np.linalg.norm(best_gradient):
+                    best_gradient = gradients
+                    best_iter = k
+
+                if np.linalg.norm(gradients) < tol:
+                    print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
+                    break
+
+                p_k = np.zeros_like(gradients)
+
+                for i in range(self.hidden_size):
+                    ptr = (self.input_size+1)*i
+                    grad_block = gradients[ptr : ptr + self.input_size + 1]
+                    H_block = H_k_blocks['hidden'][i]
+                    p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
+
+                offset = (self.input_size*self.hidden_size)+self.hidden_size
+                for i in range(self.output_size):
+                    ptr = offset+((self.hidden_size+1)*i)
+                    grad_block = gradients[ptr : ptr + self.hidden_size + 1]
+                    H_block = H_k_blocks['output'][i]
+                    p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
+
+                alpha_k = self.line_search_wolfe(p_k, gradients, x, y, t, T)
+
+                params_new = params + (alpha_k * p_k) - (self.regularization * params)
+                self.unflatten_params(params_new)
+
+                s_k = params_new - params
+                self.forward(x)
+                gradients_new = self.compute_gradients(x, y) / x.shape[0]
+                y_k = gradients_new - gradients
+
+                self.update_hessian(H_k_blocks, s_k, y_k)
+
+                params = params_new
+
+            if exit:
                 break
-
-            # Controllo convergenza
-            if prev_loss is not None:
-                if abs(self.current_loss - prev_loss) < tol:
-                    patience_counter += 1
-                    if patience_counter >= 5:
-                        print(f"✅ Loss converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}. Stopping.")
-                        break
-                else:
-                    patience_counter = 0
-
-            prev_loss = self.current_loss
-
-            if np.linalg.norm(gradients) < np.linalg.norm(best_gradient):
-                best_gradient = gradients
-                best_iter = k
-
-            if np.linalg.norm(gradients) < tol:
-                print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
-                break
-
-            p_k = np.zeros_like(gradients)
-
-            for i in range(self.hidden_size):
-                ptr = (self.input_size+1)*i
-                grad_block = gradients[ptr : ptr + self.input_size + 1]
-                H_block = H_k_blocks['hidden'][i]
-                p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
-
-            offset = (self.input_size*self.hidden_size)+self.hidden_size
-            for i in range(self.output_size):
-                ptr = offset+((self.hidden_size+1)*i)
-                grad_block = gradients[ptr : ptr + self.hidden_size + 1]
-                H_block = H_k_blocks['output'][i]
-                p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
-
-            alpha_k = self.line_search_wolfe(p_k, gradients, X_train, y_train, t, T)
-
-            params_new = params + (alpha_k * p_k) - (self.regularization * params)
-            self.unflatten_params(params_new)
-
-            s_k = params_new - params
-            self.forward(X_train)
-            gradients_new = self.compute_gradients(X_train, y_train) / X_train.shape[0]
-            y_k = gradients_new - gradients
-
-            self.update_hessian(H_k_blocks, s_k, y_k)
-
-            params = params_new
 
         else:
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")

@@ -38,10 +38,10 @@ for i in range(trials):
     )
 
     # --- Training --- #
-    loss_bce = model_bce.train(X_bce, y_bce, epochs=10000)
+    loss_bce = model_bce.train(X_bce, y_bce, epochs=1, batch=False)
     losses_bce.append(loss_bce)
     print(loss_bce[-1])
-    loss_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=10000)
+    loss_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=1, batch=False)
     losses_mse.append(loss_mse)
     print(loss_mse[-1])
 
