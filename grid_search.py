@@ -39,11 +39,11 @@ for lr in [0.01, 0.1, 0.2]:
 
             loss_bce, mean_time_bce = model_nag_bce.train(X_bce, y_bce, epochs=100000, batch=True)
             loss_mse, mean_time_mse = model_nag_mse.train(X_mse_normalized, y_mse_normalized, epochs=100000, batch=True)
-            plot_losses([loss_bce], [loss_mse], save=True, filename=f"GRID_SEARCH/grid_search_nag__N{n}_LR{lr}_REG{reg}.png", label=f"Grid Search NAG with N={n}, LR={lr}, REG={reg}", plot_labels=[f"Loss BCE durante il training (final loss={loss_bce[-1]})", f"Loss MSE durante il training (final loss={loss_mse[-1]})"])
+            plot_losses([loss_bce], [loss_mse], save=True, filename=f"GRID_SEARCH/NAG/grid_search_nag__N{n}_LR{lr}_REG{reg}.png", label=f"Grid Search NAG with N={n}, LR={lr}, REG={reg}", plot_labels=[f"Loss BCE durante il training (final loss={loss_bce[-1]})", f"Loss MSE durante il training (final loss={loss_mse[-1]})"])
 
             model_bfgs_bce = NeuralNetworkBFGS_BCE(6, n, 1, BCE(), reg)
             model_bfgs_mse = NeuralNetworkBFGS_MSE(12, n, 3, MSE(), reg)
 
             loss_bce, mean_time_bce = model_bfgs_bce.train(X_bce, y_bce, epochs=200, tol=1e-6, batch=True)
             loss_mse, mean_time_mse = model_bfgs_mse.train(X_mse_normalized, y_mse_normalized, epochs=200, tol=1e-6, batch=True)
-            plot_losses([loss_bce], [loss_mse], save=True, filename=f"GRID_SEARCH/grid_search_bfgs__N{n}_LR{lr}_REG{reg}.png", label=f"Grid Search BFGS with N={n}, LR={lr}, REG={reg}", plot_labels=[f"Loss BCE durante il training (final loss={loss_bce[-1]})", f"Loss MSE durante il training (final loss={loss_mse[-1]})"])
+            plot_losses([loss_bce], [loss_mse], save=True, filename=f"GRID_SEARCH/BFGS/grid_search_bfgs__N{n}_LR{lr}_REG{reg}.png", label=f"Grid Search BFGS with N={n}, LR={lr}, REG={reg}", plot_labels=[f"Loss BCE durante il training (final loss={loss_bce[-1]})", f"Loss MSE durante il training (final loss={loss_mse[-1]})"])
