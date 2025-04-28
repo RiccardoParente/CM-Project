@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-def plot_losses(losses_bce, losses_mse):
+def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plot_labels=['Loss BCE durante il training','Loss MSE durante il training']):
     plt.figure(figsize=(12, 5))
+    plt.suptitle(label)
 
     plt.subplot(1, 2, 1)
     for l in losses_bce:
@@ -11,7 +12,7 @@ def plot_losses(losses_bce, losses_mse):
 
     #if len(losses_bce) != 1:
         #plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
-    plt.title('Loss BCE durante il training')
+    plt.title(plot_labels[0])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.grid(True)
@@ -23,14 +24,18 @@ def plot_losses(losses_bce, losses_mse):
 
     #if len(losses_mse) != 1:
         #plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
-    plt.title('Loss MSE durante il training')
+    plt.title(plot_labels[1])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.grid(True)
     plt.legend()
     
     plt.tight_layout()
-    plt.show()
+    if save and filename is not None:
+        plt.savefig(filename)
+        plt.clf()
+    else:
+        plt.show()
 
 def load_dataBCE():
 

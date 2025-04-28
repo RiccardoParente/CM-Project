@@ -1,5 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from NeuralNetworkNAG_BCE import NeuralNetworkNAG_BCE
 from NeuralNetworkNAG_MSE import NeuralNetworkNAG_MSE
 from utils import load_dataBCE, load_dataMSE, plot_losses
@@ -38,10 +36,10 @@ for i in range(trials):
     )
 
     # --- Training --- #
-    loss_bce, mean_time_bce = model_bce.train(X_bce, y_bce, epochs=1, batch=False)
+    loss_bce, mean_time_bce = model_bce.train(X_bce, y_bce, epochs=10000, batch=True)
     losses_bce.append(loss_bce)
     print(loss_bce[-1])
-    loss_mse, mean_time_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=1, batch=False)
+    loss_mse, mean_time_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=10000, batch=True)
     losses_mse.append(loss_mse)
     print(loss_mse[-1])
 
