@@ -61,14 +61,14 @@ class NeuralNetwork:
         s = self.sigmoid(x)
         return s * (1 - s)
 
-    # Metodo per stampare la struttura della rete
     def print_structure(self):
+        '''Print the structure of the neural network.'''
+        
         print(f"Struttura della rete neurale:")
         print(f"Input size: {self.input_size}")
         print(f"Hidden layers sizes: {self.hidden_size}")
         print(f"Output size: {self.output_size}")
         
-        # Pesi e bias di ogni layer
         print("\nPesi e bias:")
         print(f"Layer 1 (input -> hidden):")
         print(f"Weights (w1): \n{self.wh}")

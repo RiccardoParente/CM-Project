@@ -3,9 +3,6 @@ import numpy as np
 class MSE:
     """ Mean Squared Error loss """
 
-    def __init__(self):
-        self.name = "Mean Squared Error"
-
     def compute(self, outputs, targets):
         return np.mean(np.power(targets - outputs, 2))
 
@@ -15,9 +12,6 @@ class MSE:
 
 class BCE:
     """ Binary Cross Entropy loss """
-
-    def __init__(self):
-        self.name = "Binary Cross Entropy"
 
     def compute(self, outputs, targets):
         outputs_clipped = np.clip(outputs, 1e-15, 1-1e-15)

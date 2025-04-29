@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plot_labels=['Loss BCE durante il training','Loss MSE durante il training']):
+    '''function to plot the losses or save the graphs to file'''
     plt.figure(figsize=(12, 5))
     plt.suptitle(label)
 
@@ -38,7 +39,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
         plt.show()
 
 def load_dataBCE():
-
+    '''function to load the MONK dataset'''
     data_bce = np.loadtxt("datasets/MONK/monks-3.train", delimiter=" ", dtype=str)
     data_bce = data_bce[:, 1:-1]
     data_bce = data_bce.astype(int)
@@ -49,6 +50,7 @@ def load_dataBCE():
     return X_bce, y_bce
 
 def load_dataMSE():
+    '''function to load the CUP dataset'''
     data_mse = np.loadtxt("datasets/CUP/ML-CUP24-TR.csv", delimiter=",")
 
     X_mse = data_mse[:, 1:-3]

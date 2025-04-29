@@ -83,6 +83,7 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
                 self.wo = self.wo + self.v_wo - (2*self.regularization*self.wo)
                 self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
 
+                # Update momentum
                 self.momentum = self.momentum *(1 - (t/T))
                 t+=1
 

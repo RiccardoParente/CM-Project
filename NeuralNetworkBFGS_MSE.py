@@ -5,6 +5,7 @@ import time
 class NeuralNetworkBFGS_MSE(NeuralNetwork):
 
     def forward(self, X):
+        '''forward pass'''
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh
         self.hidden_output = self.leacky_relu(self.net_h)
@@ -15,6 +16,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
         return self.predicted_output
 
     def compute_gradients(self, X, y):
+        '''backpropagation'''
         output_delta = self.loss.derivative(self.predicted_output, y)
         hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
         grad_wo = np.dot(self.hidden_output.T, output_delta)
@@ -135,13 +137,13 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                 gradients = self.compute_gradients(x, y) / x.shape[0]
                 history.append(self.current_loss)
 
-                # Controllo divergenza
+                # Divergence check
                 if np.isnan(self.current_loss) or self.current_loss > 1e5:
                     print("❌ Loss diverging. Stopping.")
                     exit = True
                     break
 
-                # Controllo convergenza
+                # Convergence check
                 if prev_loss is not None:
                     if abs(self.current_loss - prev_loss) < tol:
                         patience_counter += 1
@@ -164,6 +166,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
 
                 p_k = np.zeros_like(gradients)
 
+                # Direction calculation
                 for i in range(self.hidden_size):
                     ptr = (self.input_size+1)*i
                     grad_block = gradients[ptr : ptr + self.input_size + 1]
@@ -182,6 +185,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                 params_new = params + (alpha_k * p_k) - (self.regularization * params)
                 self.unflatten_params(params_new)
 
+                # Hessian update
                 s_k = params_new - params
                 self.forward(x)
                 gradients_new = self.compute_gradients(x, y) / x.shape[0]
