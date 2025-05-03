@@ -9,7 +9,6 @@ X_bce, y_bce = load_dataBCE()
     
 X_mse_normalized, y_mse_normalized = load_dataMSE()
 
-
 for lr in [0.01, 0.1, 0.2]:
     for reg in [0.001, 0.01, 0.1]:
         for n in [2, 4, 8, 10]:
