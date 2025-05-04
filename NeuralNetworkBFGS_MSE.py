@@ -96,6 +96,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
                 # Check curvature condition
                 if np.abs(dphi_i) <= c2 * np.abs(dphi_prev):
+                    print(alpha_i)
                     return alpha_i
 
                 if dphi_i > 0:
@@ -105,12 +106,13 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             else:
                 alpha_high = alpha_i
 
-        return alpha_i*(1-(t/T))
+        return alpha_i
 
     def train(self, X_train, y_train, epochs=100, tol=1e-4, batch=False):
         params = self.flatten_params()
         H_k_blocks = self.initialize_hessian()
         history = []
+        history_grad = []
         t = 1
         gradients = 0
         self.current_loss = 0
@@ -136,6 +138,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                 self.current_loss = self.loss.compute(self.predicted_output, y) + self.regularization*np.linalg.norm(params)
                 gradients = self.compute_gradients(x, y) / x.shape[0]
                 history.append(self.current_loss)
+                history_grad.append(np.linalg.norm(gradients))
 
                 # Divergence check
                 if np.isnan(self.current_loss) or self.current_loss > 1e5:
@@ -204,4 +207,4 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
-        return history, mean_time / T
+        return history, mean_time / T, history_grad

@@ -2,7 +2,7 @@ import numpy as np
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size, loss, regularization=0.01, momentum=0.9, learning_rate=0.01):
-        
+        np.random.seed(0)
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size

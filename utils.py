@@ -6,7 +6,6 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     '''function to plot the losses or save the graphs to file'''
     plt.figure(figsize=(12, 5))
     plt.suptitle(label)
-
     plt.subplot(1, 2, 1)
     for l in losses_bce:
         plt.plot(l, alpha = 0.5 if len(losses_bce) != 1 else 1)
@@ -16,6 +15,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     plt.title(plot_labels[0])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
+    plt.xscale('log')
     plt.grid(True)
     plt.legend()
     
@@ -28,6 +28,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     plt.title(plot_labels[1])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
+    plt.xscale('log')
     plt.grid(True)
     plt.legend()
     
@@ -37,6 +38,34 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
         plt.clf()
     else:
         plt.show()
+
+def plot_gradients(grad_bce, grad_mse):
+    '''function to plot the gradients norm'''
+    plt.figure(figsize=(12, 5))
+    plt.suptitle('Gradients Norm')
+
+    plt.subplot(1, 2, 1)
+    plt.plot(grad_bce, color='green')
+
+    plt.title('Gradients Norm BCE')
+    plt.xlabel('Epochs')
+    plt.ylabel('Gradient Norm')
+    plt.xscale('log')
+    plt.grid(True)
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(grad_mse, color='green')
+
+    plt.title('Gradients Norm MSE')
+    plt.xlabel('Epochs')
+    plt.ylabel('Gradient Norm')
+    plt.xscale('log')
+    plt.grid(True)
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
 
 def load_dataBCE():
     '''function to load the MONK dataset'''

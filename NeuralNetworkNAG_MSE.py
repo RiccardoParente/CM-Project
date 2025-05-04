@@ -5,7 +5,7 @@ import time
 class NeuralNetworkNAG_MSE(NeuralNetwork):
     def __init__(self, input_size, hidden_size, output_size, loss, regularization, learning_rate, momentum):
         super().__init__(input_size, hidden_size, output_size, loss, regularization, momentum, learning_rate )
-        # inizializza le velocità dei pesi a zero
+        # velocity initialization
         self.v_wh = np.zeros_like(self.wh)
         self.v_bh = np.zeros_like(self.bh)
         self.v_wo = np.zeros_like(self.wo)
@@ -13,10 +13,11 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
 
     def train(self, X_train, y_train, epochs, batch=False):
         loss_mse = []
+        gradients = []
         prev_loss = None
         patience = 50
         patience_counter = 0
-        tolerance = 1e-6
+        tolerance = 1e-3
         exit = False
         x_size = 1 if batch else X_train.shape[0]
         mean_time = 0
@@ -42,13 +43,13 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 loss = self.loss.compute(output, y) + self.regularization*np.linalg.norm(self.flatten_params())
                 loss_mse.append(loss)
 
-                # Controllo divergenza
+                # Divergence check
                 if np.isnan(loss) or loss > 1e5:
                     print("❌ Loss diverging. Stopping.")
                     exit = True
                     break
 
-                # Controllo convergenza
+                # Convergence check
                 if prev_loss is not None:
                     if abs(loss - prev_loss) < tolerance:
                         patience_counter += 1
@@ -70,6 +71,10 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 delta_wh = np.dot(x.T, sigma_hidden) / x.shape[0]
                 delta_bh = np.sum(sigma_hidden, axis=0) / x.shape[0]
 
+                grad = np.array([])
+                grad = np.concatenate(([], delta_wh.flatten(), delta_bh.flatten(), delta_wo.flatten(), delta_bo.flatten()))
+                gradients.append(np.linalg.norm(grad))
+
                 # Update velocity
                 self.v_wh = ((self.learning_rate * delta_wh) + (self.momentum * self.v_wh))
                 self.v_bh = ((self.learning_rate * delta_bh) + (self.momentum * self.v_bh))
@@ -87,11 +92,10 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
             if exit:
                 break
 
-        return loss_mse, mean_time / (epochs * x_size)
+        return loss_mse, mean_time / (epochs * x_size), gradients
 
-    # Funzione per anticipare i pesi (pre-update dei pesi)
     def anticipate_weights(self):
-        # Calcolare i pesi anticipati con la velocità
+        '''function to anticipate the weights'''
         wh_pre = self.wh + (self.momentum * self.v_wh)
         bh_pre = self.bh + (self.momentum * self.v_bh)
 
