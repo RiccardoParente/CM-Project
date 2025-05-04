@@ -13,6 +13,7 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
     
     def train(self, X_train, y_train, epochs, batch=False):
         loss_bce = []
+        mean_loss_epoch = []
         gradients = []
         t = 1
         prev_loss = None
@@ -28,6 +29,7 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
             indices = np.random.permutation(len(X_train))
             X_train = X_train[indices]
             y_train = y_train[indices]
+            losses = []
             for i in range(x_size):
                 start_time = time.time()
                 x = X_train if batch else np.array([X_train[i]])
@@ -40,9 +42,13 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
                 hidden_output = self.leacky_relu(net_hidden)
                 net_output = np.dot(hidden_output, wo_pre) + bo_pre
                 output = self.sigmoid(net_output)
+                np.set_printoptions(suppress=True)
                 
                 loss = self.loss.compute(output, y) + self.regularization*np.linalg.norm(self.flatten_params())
-                loss_bce.append(loss)
+                if batch:
+                    loss_bce.append(loss)
+                else:
+                    losses.append(loss)
 
                 # Divergence check
                 if np.isnan(loss) or loss > 1e5:
@@ -90,13 +96,18 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
 
                 # Update momentum
                 self.momentum = self.momentum *(1 - (t/T))
-                t+=1
+                
 
                 mean_time += (time.time() - start_time)
-                
+            t+=1
+            mean_loss_epoch.append(np.mean(losses))    
+            
             if exit:
                 break
-        return loss_bce, mean_time / T, gradients
+        if batch:
+            return loss_bce, mean_time / T, gradients
+        else:
+            return mean_loss_epoch, mean_time / T, gradients
 
     def anticipate_weights(self):
         '''function to anticipate the weights'''

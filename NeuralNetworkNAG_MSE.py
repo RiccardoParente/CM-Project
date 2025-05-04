@@ -42,6 +42,7 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 # Compute Loss
                 loss = self.loss.compute(output, y) + self.regularization*np.linalg.norm(self.flatten_params())
                 loss_mse.append(loss)
+                
 
                 # Divergence check
                 if np.isnan(loss) or loss > 1e5:
@@ -66,7 +67,7 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 sigma_output = -self.loss.derivative(output, y)
                 delta_wo = np.dot(hidden_output.T, sigma_output) / x.shape[0]
                 delta_bo = np.sum(sigma_output, axis=0) / x.shape[0]
-        
+                
                 sigma_hidden = np.dot(sigma_output, wo_pre.T) * self.leacky_relu_derivative(net_hidden)
                 delta_wh = np.dot(x.T, sigma_hidden) / x.shape[0]
                 delta_bh = np.sum(sigma_hidden, axis=0) / x.shape[0]
@@ -87,12 +88,13 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 self.wo = self.wo + self.v_wo - (2*self.regularization*self.wo)
                 self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
 
-                mean_time += (time.time() - start_time)
-            
+                mean_time += (time.time() - start_time) 
+
             if exit:
                 break
 
         return loss_mse, mean_time / (epochs * x_size), gradients
+        
 
     def anticipate_weights(self):
         '''function to anticipate the weights'''

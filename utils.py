@@ -21,7 +21,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     
     plt.subplot(1, 2, 2)
     for l in losses_mse:
-        plt.plot(l, alpha = 0.5 if len(losses_mse) != 1 else 1)
+        plt.plot(l, alpha = 0.5 if len(losses_mse) != 1 else 1, color="orange")
 
     #if len(losses_mse) != 1:
         #plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
