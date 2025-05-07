@@ -57,7 +57,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             H_k_blocks['output'][i] = self.update_block(H_k_blocks['output'][i], s_k_block, y_k_block)
         return H_k_blocks
 
-    def update_block(self, H_k, s_k, y_k, epsilon=1e-4):
+    def update_block(self, H_k, s_k, y_k, epsilon=1e-6):
         '''Approximate inverse Hessian block update'''
         s_k_t = s_k.T
         y_k_t = y_k.T
@@ -81,8 +81,9 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
         dphi_prev = np.dot(grad_f_k, p_k)
         params = self.flatten_params()
         alpha_i = 0
+        alpha_best = 0
 
-        for i in range(20):
+        for i in range(15):
             alpha_i = (alpha_low + alpha_high) / 2.0
             grads = 0
             params_temp = params + alpha_i * p_k
@@ -94,9 +95,9 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
 
             # Check sufficient decrease
             if phi_i <= phi_prev + c1 * alpha_i * dphi_prev:
+                alpha_best = alpha_i if alpha_best == 0 else alpha_best
                 # Check curvature condition
                 if np.abs(dphi_i) <= c2 * np.abs(dphi_prev):
-                    print(alpha_i)
                     return alpha_i
 
                 if dphi_i > 0:
@@ -106,7 +107,8 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             else:
                 alpha_high = alpha_i
 
-        return alpha_i
+        alpha_best = alpha_i if alpha_best == 0 else alpha_best
+        return alpha_best
 
     def train(self, X_train, y_train, epochs=100, tol=1e-4, batch=False):
         params = self.flatten_params()
@@ -150,7 +152,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                 if prev_loss is not None:
                     if abs(self.current_loss - prev_loss) < tol:
                         patience_counter += 1
-                        if patience_counter >= 5:
+                        if patience_counter >= 50:
                             print(f"✅ Loss converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}. Stopping.")
                             exit = True
                             break

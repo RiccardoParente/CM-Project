@@ -87,4 +87,4 @@ def load_dataMSE():
     X_mse_normalized = scaler.fit_transform(X_mse)
     y_mse = data_mse[:, -3:]
     y_mse_normalized = scaler.fit_transform(y_mse)
-    return X_mse_normalized, y_mse_normalized
+    return X_mse_normalized, y_mse_normalized, X_mse, y_mse

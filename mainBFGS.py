@@ -10,13 +10,13 @@ if __name__ == '__main__':
     input_size_mse = 12
     hidden_size_mse = 8
     output_size_mse = 3
-    epochs = 5000
-    tolerance = 1e-6
-    regularization = 0.001
+    epochs = 10000
+    tolerance = 1e-4
+    regularization = 0.005
 
     X_bce, y_bce = load_dataBCE()
     
-    X_mse_normalized, y_mse_normalized = load_dataMSE()
+    X_mse_normalized, y_mse_normalized, x_mse, y_mse = load_dataMSE()
 
     losses_bce = []
     losses_mse = []
