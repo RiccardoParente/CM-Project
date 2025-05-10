@@ -6,10 +6,12 @@ from losses import BCE, MSE
 # --- Caricamento dataset da CSV --- #
 X_bce, y_bce = load_dataBCE()
     
-X_mse_normalized, y_mse_normalized = load_dataMSE()
+X_mse_normalized, y_mse_normalized, x_mse, y_mse = load_dataMSE()
 
 losses_bce = []
 losses_mse = []
+mean_time_bce = 0
+mean_time_mse = 0
 
 trials = 1
 
@@ -36,12 +38,22 @@ for i in range(trials):
     )
 
     # --- Training --- #
-    loss_bce, mean_time_bce, gradients_bce = model_bce.train(X_bce, y_bce, epochs=1000, batch=True)
+    loss_bce, mt, gradients_bce = model_bce.train(X_bce, y_bce, epochs=10000, batch=True)
     losses_bce.append(loss_bce)
+    mean_time_bce += mt
     print(loss_bce[-1])
-    loss_mse, mean_time_mse, gradients_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=1000, batch=True)
+    loss_mse, mt, gradients_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=10000, batch=True)
     losses_mse.append(loss_mse)
+    mean_time_mse += mt
     print(loss_mse[-1])
 
+print("mean times: ", mean_time_bce/trials, mean_time_mse/trials)
 plot_losses(losses_bce, losses_mse)
 plot_gradients(gradients_bce, gradients_mse)
+convergence_bce = []
+convergence_mse = []
+for i in range(len(losses_bce[0])-1):
+    convergence_bce.append(losses_bce[0][i+1]/losses_bce[0][i])
+for i in range(len(losses_mse[0])-1):
+    convergence_mse.append(losses_mse[0][i+1]/losses_mse[0][i])
+plot_losses([convergence_bce], [convergence_mse], label="Convergence BFGS", plot_labels=["Convergence BCE", "Convergence MSE"])

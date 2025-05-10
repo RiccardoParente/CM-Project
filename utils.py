@@ -15,7 +15,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     plt.title(plot_labels[0])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.xscale('log')
+    plt.yscale('log')
     plt.grid(True)
     plt.legend()
     
@@ -28,7 +28,7 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     plt.title(plot_labels[1])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
-    plt.xscale('log')
+    plt.yscale('log')
     plt.grid(True)
     plt.legend()
     
@@ -50,7 +50,7 @@ def plot_gradients(grad_bce, grad_mse):
     plt.title('Gradients Norm BCE')
     plt.xlabel('Epochs')
     plt.ylabel('Gradient Norm')
-    plt.xscale('log')
+    plt.yscale('log')
     plt.grid(True)
     plt.legend()
     
@@ -60,7 +60,7 @@ def plot_gradients(grad_bce, grad_mse):
     plt.title('Gradients Norm MSE')
     plt.xlabel('Epochs')
     plt.ylabel('Gradient Norm')
-    plt.xscale('log')
+    plt.yscale('log')
     plt.grid(True)
     plt.legend()
     
