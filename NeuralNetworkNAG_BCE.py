@@ -56,7 +56,6 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
                     inner_outputs.append(inn_out)
                 net_output = np.dot(inn_out, wo_pre) + bo_pre
                 output = self.sigmoid(net_output)
-                np.set_printoptions(suppress=True)
                 
                 loss = self.loss.compute(output, y) + self.regularization*np.linalg.norm(self.flatten_params())
                 if batch:

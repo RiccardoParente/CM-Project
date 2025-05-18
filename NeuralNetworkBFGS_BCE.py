@@ -6,36 +6,62 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
 
     def forward(self, X):
         '''forward pass'''
-        # Hidden layer
+        # First layer
         self.net_h = np.dot(X, self.wh) + self.bh
         self.hidden_output = self.tanh(self.net_h)
 
+        #Hidden layers
+        inn_out = self.hidden_output
+        net_inner = self.net_h
+        self.net_inners = [net_inner]
+        self.inner_outputs = [inn_out]
+        for h in range(len(self.w_inner)):
+            net_inner = np.dot(inn_out, self.w_inner[h]) + self.b_inner[h]
+            inn_out = self.tanh(net_inner)
+            self.net_inners.append(net_inner)
+            self.inner_outputs.append(inn_out)
+
         # Output layer
-        self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
+        self.net_o = np.dot(inn_out, self.wo) + self.bo
         self.predicted_output = self.sigmoid(self.net_o)
         return self.predicted_output
 
     def compute_gradients(self, X, y):
         '''backpropagation'''
         output_delta = self.predicted_output - y
-        hidden_delta = np.dot(output_delta, self.wo.T) * self.tanh_derivative(self.net_h)
-        grad_wo = np.dot(self.hidden_output.T, output_delta)
+        grad_wo = np.dot(self.inner_outputs[-1].T, output_delta)
         grad_bo = sum(output_delta)
+
+        grad_w_inner = []
+        grad_b_inner = []
+        inner_delta = np.dot(output_delta, self.wo.T) * self.tanh_derivative(self.net_inners[-1])
+        for h in reversed(range(len(self.w_inner))):
+            grad_w_inner.append(np.dot(self.inner_outputs[h].T, inner_delta))
+            grad_b_inner.append(sum(inner_delta))
+            inner_delta = np.dot(inner_delta, self.w_inner[h].T) * self.tanh_derivative(self.net_inners[h])
+
+        hidden_delta = inner_delta
         grad_wh = np.dot(X.T, hidden_delta)
         grad_bh = sum(hidden_delta)
 
         output = np.array([])
         for i in range(self.hidden_size):
             output = np.concatenate((output, grad_wh[:, i], [grad_bh[i]]))
+        for h in range(len(self.w_inner)):
+            for i in range(self.hidden_size):
+                output = np.concatenate((output, grad_w_inner[h][:,i], [grad_b_inner[h][i]]))
         for i in range(self.output_size):
             output = np.concatenate((output, grad_wo[:, i], [grad_bo[i]]))
         return output
     
     def initialize_hessian(self):
         '''Hessian initialization'''
-        H_k_blocks = {'hidden': [], 'output': []}
+        H_k_blocks = {'hidden': [], 'inner': [], 'output': []}
         for _ in range(self.hidden_size):
             H_k_blocks['hidden'].append(np.eye(self.input_size + 1))
+        for l in range(len(self.w_inner)):
+            for _ in range(self.hidden_size):
+                H_k_blocks['inner'].append(np.eye(self.hidden_size + 1))
         for _ in range(self.output_size):
             H_k_blocks['output'].append(np.eye(self.hidden_size + 1))
         return H_k_blocks
@@ -48,8 +74,14 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
             s_k_block = s_k[ptr : ptr + self.input_size+1][:, np.newaxis]
             y_k_block = y_k[ptr : ptr + self.input_size+1][:, np.newaxis]
             H_k_blocks['hidden'][i] = self.update_block(H_k_blocks['hidden'][i], s_k_block, y_k_block)
-
         offset = (self.input_size*self.hidden_size)+self.hidden_size
+        for h in range(len(self.w_inner)):
+            for i in range(self.hidden_size):
+                ptr = offset+((self.hidden_size+1)*i)
+                s_k_block = s_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
+                y_k_block = y_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
+                H_k_blocks['inner'][(h*self.hidden_size)+i] = self.update_block(H_k_blocks['inner'][(h*self.hidden_size)+i], s_k_block, y_k_block)
+            offset += (self.hidden_size*self.hidden_size)+self.hidden_size
         for i in range(self.output_size):
             ptr = offset+((self.hidden_size+1)*i)
             s_k_block = s_k[ptr : ptr + self.hidden_size+1][:, np.newaxis]
@@ -176,8 +208,14 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
                     grad_block = gradients[ptr : ptr + self.input_size + 1]
                     H_block = H_k_blocks['hidden'][i]
                     p_k[ptr : ptr + self.input_size + 1] = -np.dot(H_block, grad_block)
-
                 offset = (self.input_size*self.hidden_size)+self.hidden_size
+                for h in range(len(self.w_inner)):
+                    for i in range(self.hidden_size):
+                        ptr = offset+((self.hidden_size+1)*i)
+                        grad_block = gradients[ptr : ptr + self.hidden_size + 1]
+                        H_block = H_k_blocks['inner'][(h*self.hidden_size)+i]
+                        p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
+                    offset += (self.hidden_size*self.hidden_size)+self.hidden_size
                 for i in range(self.output_size):
                     ptr = offset+((self.hidden_size+1)*i)
                     grad_block = gradients[ptr : ptr + self.hidden_size + 1]
