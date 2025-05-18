@@ -8,7 +8,7 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
         '''forward pass'''
         # Hidden layer
         self.net_h = np.dot(X, self.wh) + self.bh
-        self.hidden_output = self.leacky_relu(self.net_h)
+        self.hidden_output = self.tanh(self.net_h)
 
         # Output layer
         self.net_o = np.dot(self.hidden_output, self.wo) + self.bo
@@ -18,7 +18,7 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
     def compute_gradients(self, X, y):
         '''backpropagation'''
         output_delta = self.predicted_output - y
-        hidden_delta = np.dot(output_delta, self.wo.T) * self.leacky_relu_derivative(self.net_h)
+        hidden_delta = np.dot(output_delta, self.wo.T) * self.tanh_derivative(self.net_h)
         grad_wo = np.dot(self.hidden_output.T, output_delta)
         grad_bo = sum(output_delta)
         grad_wh = np.dot(X.T, hidden_delta)

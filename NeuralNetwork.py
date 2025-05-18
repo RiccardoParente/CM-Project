@@ -1,7 +1,7 @@
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, input_size, hidden_size, output_size, loss, regularization=0.01, momentum=0.9, learning_rate=0.01):
+    def __init__(self, input_size, hidden_size, output_size, loss, layers=0, regularization=0.01, momentum=0.9, learning_rate=0.01):
         
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -10,10 +10,16 @@ class NeuralNetwork:
         self.regularization = regularization
         self.momentum = momentum
         self.learning_rate = learning_rate
+        self.layers = layers
 
         # Initialize weights and biases randomly
         self.wh = np.random.randn(self.input_size, self.hidden_size) * np.sqrt(2.0 / input_size)
         self.bh = np.zeros(self.hidden_size)
+        self.w_inner = []
+        self.b_inner = []
+        for _ in range(layers):
+            self.w_inner.append(np.random.randn(self.hidden_size, self.hidden_size) * np.sqrt(2.0 / hidden_size))
+            self.b_inner.append(np.zeros(self.hidden_size))
         self.wo = np.random.randn(self.hidden_size, self.output_size) * np.sqrt(2.0 / hidden_size)
         self.bo = np.zeros(self.output_size)
 
@@ -22,6 +28,9 @@ class NeuralNetwork:
         output = np.array([])
         for i in range(self.hidden_size):
             output = np.concatenate((output, self.wh[:,i], [self.bh[i]]))
+        for h in range(len(self.w_inner)):
+            for i in range(self.hidden_size):
+                output = np.concatenate((output, self.w_inner[h][:,i], [self.b_inner[h][i]]))
         for i in range(self.output_size):
             output = np.concatenate((output, self.wo[:,i], [self.bo[i]]))
         return output
@@ -32,6 +41,7 @@ class NeuralNetwork:
         bh_temp = []
         wo_temp = []
         bo_temp = []
+        ptr = 0
         for i in range(self.hidden_size):
             ptr = self.input_size*i
             wh_temp = np.concatenate((wh_temp, params[ptr:ptr+self.input_size]))
@@ -39,6 +49,16 @@ class NeuralNetwork:
         self.wh = np.array(wh_temp).reshape(self.input_size, self.hidden_size)
         self.bh = np.array(bh_temp)
         offset = (self.input_size*self.hidden_size)+self.hidden_size
+        for h in range(len(self.w_inner)):
+            w_inner_temp = []
+            b_inner_temp = []
+            for i in range(self.hidden_size):
+                ptr = offset+(self.hidden_size*i)
+                w_inner_temp = np.concatenate((w_inner_temp, params[ptr:ptr+self.hidden_size]))
+                b_inner_temp = np.concatenate((b_inner_temp, [params[ptr+self.hidden_size]]))
+            offset += (self.hidden_size*self.hidden_size)+self.hidden_size
+            self.w_inner[h] = np.array(w_inner_temp).reshape(self.hidden_size, self.hidden_size)
+            self.b_inner[h] = np.array(b_inner_temp)
         for i in range(self.output_size):
             ptr = offset+(self.hidden_size*i)
             wo_temp = np.concatenate((wo_temp, params[ptr:ptr+self.hidden_size]))
@@ -46,14 +66,12 @@ class NeuralNetwork:
         self.wo = np.array(wo_temp).reshape(self.hidden_size, self.output_size)
         self.bo = np.array(bo_temp)
 
-    def leacky_relu(self, z):
-        alpha = 0.01
-        return np.maximum(alpha * z, z)
-    
-    def leacky_relu_derivative(self, a):
-        alpha = 0.01
-        return np.where(a > 0, 1, alpha)
-    
+    def tanh(self, x):
+        return np.tanh(x)
+
+    def tanh_derivative(self, x):
+        return 1 - np.power(np.tanh(x), 2)
+
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
 
