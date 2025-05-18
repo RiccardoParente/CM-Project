@@ -12,6 +12,10 @@ losses_bce = []
 losses_mse = []
 mean_time_bce = 0
 mean_time_mse = 0
+minimums_bce = []
+min_bce = float('inf')
+minimums_mse = []
+min_mse = float('inf')
 
 trials = 1
 
@@ -22,7 +26,7 @@ for i in range(trials):
         hidden_size=8,
         output_size=1,
         loss=BCE(),
-        layers=1,
+        layers=2,
         regularization=0,
         momentum=0.9,
         learning_rate=0.1,
@@ -32,7 +36,7 @@ for i in range(trials):
         input_size=12,
         hidden_size=8,
         output_size=3,
-        layers=1,
+        layers=2,
         loss=MSE(),
         regularization=0,
         momentum=0.9,
@@ -42,20 +46,37 @@ for i in range(trials):
     # --- Training --- #
     loss_bce, mt, gradients_bce = model_bce.train(X_bce, y_bce, epochs=10000, batch=True)
     losses_bce.append(loss_bce)
+    if loss_bce[-1] < min_bce:
+        min_bce = loss_bce[-1]
+    minimums_bce.append(loss_bce[-1])
     mean_time_bce += mt
     print(loss_bce[-1])
     loss_mse, mt, gradients_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=10000, batch=True)
     losses_mse.append(loss_mse)
+    if loss_mse[-1] < min_mse:
+        min_mse = loss_mse[-1]
+    minimums_mse.append(loss_mse[-1])
     mean_time_mse += mt
     print(loss_mse[-1])
 
 print("mean times: ", mean_time_bce/trials, mean_time_mse/trials)
 plot_losses(losses_bce, losses_mse)
 plot_gradients(gradients_bce, gradients_mse)
-convergence_bce = []
-convergence_mse = []
-for i in range(len(losses_bce[0])-1):
-    convergence_bce.append(losses_bce[0][i+1]/losses_bce[0][i])
-for i in range(len(losses_mse[0])-1):
-    convergence_mse.append(losses_mse[0][i+1]/losses_mse[0][i])
-plot_losses([convergence_bce], [convergence_mse], label="Convergence BFGS", plot_labels=["Convergence BCE", "Convergence MSE"])
+convergences_bce = []
+convergences_mse = []
+relative_bce = []
+relative_mse = []
+for t in range(trials):
+    convergence_bce = []
+    convergence_mse = []
+    for i in range(len(losses_bce[t])-1):
+        convergence_bce.append(losses_bce[t][i+1]/losses_bce[t][i])
+    for i in range(len(losses_mse[t])-1):
+        convergence_mse.append(losses_mse[t][i+1]/losses_mse[t][i])
+    convergences_bce.append(convergence_bce)
+    convergences_mse.append(convergence_mse)
+    relative_bce.append(losses_bce[t]-min_bce)
+    relative_mse.append(losses_mse[t]-min_mse)
+
+plot_losses(convergences_bce, convergences_mse, label="Convergence NAG", plot_labels=["Convergence BCE", "Convergence MSE"])
+plot_losses(relative_bce, relative_mse, label="Relative gap NAG", plot_labels=["Relative gap BCE", "Relative gap MSE"])

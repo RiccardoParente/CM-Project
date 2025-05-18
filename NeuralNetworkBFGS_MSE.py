@@ -158,6 +158,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
         x_size = 1 if batch else X_train.shape[0]
         T = epochs*x_size
         mean_time = 0
+        diverged = False
 
         for k in range(epochs):
             indices = np.random.permutation(len(X_train))
@@ -177,6 +178,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                 # Divergence check
                 if np.isnan(self.current_loss) or self.current_loss > 1e5:
                     print("❌ Loss diverging. Stopping.")
+                    diverged = True
                     exit = True
                     break
 
@@ -247,4 +249,4 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
-        return history, mean_time / T, history_grad
+        return history, mean_time / T, history_grad, diverged
