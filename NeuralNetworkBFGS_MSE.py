@@ -250,4 +250,4 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
-        return history, mean_time / 1, history_grad, diverged
+        return history, mean_time / t, history_grad, diverged
