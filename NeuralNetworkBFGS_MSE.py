@@ -226,6 +226,7 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
                     p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
 
                 alpha_k = self.line_search_wolfe(p_k, gradients, x, y, t, T)
+                t += 1
 
                 params_new = params + (alpha_k * p_k) - (self.regularization * params)
                 self.unflatten_params(params_new)
@@ -249,4 +250,4 @@ class NeuralNetworkBFGS_MSE(NeuralNetwork):
             print(f"Maximum iterations reached, final loss: {self.current_loss:.6f}, best gradient: {best_iter+1}, gradient norm: {np.linalg.norm(best_gradient)}")
 
         self.unflatten_params(params)
-        return history, mean_time / T, history_grad, diverged
+        return history, mean_time / 1, history_grad, diverged

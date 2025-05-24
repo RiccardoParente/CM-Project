@@ -26,6 +26,7 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
         exit = False
         x_size = 1 if batch else X_train.shape[0]
         mean_time = 0
+        t = 0
 
         for i in range(epochs):
             indices = np.random.permutation(len(X_train))
@@ -119,11 +120,12 @@ class NeuralNetworkNAG_MSE(NeuralNetwork):
                 self.bo = self.bo + self.v_bo - (2*self.regularization*self.bo)
 
                 mean_time += (time.time() - start_time) 
+                t += 1
 
             if exit:
                 break
 
-        return loss_mse, mean_time / (epochs * x_size), gradients
+        return loss_mse, mean_time / t, gradients
         
 
     def anticipate_weights(self):

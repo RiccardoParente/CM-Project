@@ -134,9 +134,9 @@ class NeuralNetworkNAG_BCE(NeuralNetwork):
             if exit:
                 break
         if batch:
-            return loss_bce, mean_time / T, gradients
+            return loss_bce, mean_time / (t*x_size), gradients
         else:
-            return mean_loss_epoch, mean_time / T, gradients
+            return mean_loss_epoch, mean_time / (t*x_size), gradients
 
     def anticipate_weights(self):
         '''function to anticipate the weights'''
