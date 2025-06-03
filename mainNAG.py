@@ -23,10 +23,10 @@ for i in range(trials):
     # --- Istanziamento modelli --- #
     model_bce = NeuralNetworkNAG_BCE(
         input_size=6,
-        hidden_size=10,
+        hidden_size=200,
         output_size=1,
         loss=BCE(),
-        layers=1,
+        layers=10,
         regularization=0,
         momentum=0.9,
         learning_rate=0.1,
@@ -34,9 +34,9 @@ for i in range(trials):
 
     model_mse = NeuralNetworkNAG_MSE(
         input_size=12,
-        hidden_size=10,
+        hidden_size=200,
         output_size=3,
-        layers=1,
+        layers=10,
         loss=MSE(),
         regularization=0,
         momentum=0.9,
@@ -51,7 +51,7 @@ for i in range(trials):
     minimums_bce.append(loss_bce[-1])
     mean_time_bce += mt
     print(loss_bce[-1])
-    loss_mse, mt, gradients_mse = model_mse.train(x_mse, y_mse, epochs=1000, batch=True)
+    loss_mse, mt, gradients_mse = model_mse.train(X_mse_normalized, y_mse_normalized, epochs=1000, batch=True)
     losses_mse.append(loss_mse)
     if loss_mse[-1] < min_mse:
         min_mse = loss_mse[-1]
@@ -75,7 +75,7 @@ for t in range(trials):
         convergence_mse.append(losses_mse[t][i+1]/losses_mse[t][i])
     convergences_bce.append(convergence_bce)
     convergences_mse.append(convergence_mse)
-    relative_bce.append([(x - 0.06) / 0.06 for x in losses_bce[t]])
+    relative_bce.append([(x - 0.05) / 0.05 for x in losses_bce[t]])
     relative_mse.append([(x - 0.03) / 0.03 for x in losses_mse[t]])
 
 plot_losses(convergences_bce, convergences_mse, label="Convergence NAG", plot_labels=["Convergence BCE", "Convergence MSE"])
