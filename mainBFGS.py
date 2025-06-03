@@ -4,12 +4,12 @@ from utils import load_dataBCE, load_dataMSE, plot_losses, plot_gradients
 from losses import BCE, MSE
     
 input_size_bce = 6
-hidden_size_bce = 8
+hidden_size_bce = 10
 output_size_bce = 1
 input_size_mse = 12
-hidden_size_mse = 8
+hidden_size_mse = 10
 output_size_mse = 3
-epochs = 10000
+epochs = 1000
 tolerance = 1e-4
 regularization = 0.05
 
@@ -30,7 +30,7 @@ trials = 1
 
 for i in range(trials):
 
-    nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), layers=2, regularization=regularization)
+    nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), layers=1, regularization=regularization)
 
     loss_bce, mt, gradients_bce = nn_bce.train(X_bce, y_bce, epochs=epochs, tol=tolerance, batch=True)
     losses_bce.append(loss_bce)
@@ -39,7 +39,7 @@ for i in range(trials):
     minimums_bce.append(loss_bce[-1])
     mean_time_bce += mt
 
-    nn_mse = NeuralNetworkBFGS_MSE(input_size_mse, hidden_size_mse, output_size_mse, MSE(), layers=2, regularization=regularization)
+    nn_mse = NeuralNetworkBFGS_MSE(input_size_mse, hidden_size_mse, output_size_mse, MSE(), layers=1, regularization=regularization)
 
     loss_mse, mt, gradients_mse, diverged = nn_mse.train(X_mse_normalized, y_mse_normalized, epochs=epochs, tol=tolerance, batch=True)
     losses_mse.append(loss_mse)
