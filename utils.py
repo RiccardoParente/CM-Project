@@ -2,13 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plot_labels=['Loss BCE durante il training','Loss MSE durante il training']):
+def plot_losses(losses_bce, losses_mse, labels=None, colors=None, save=False, filename=None, label='', plot_labels=['Loss BCE durante il training','Loss MSE durante il training']):
     '''function to plot the losses or save the graphs to file'''
     plt.figure(figsize=(12, 5))
     plt.suptitle(label)
     plt.subplot(1, 2, 1)
-    for l in losses_bce:
-        plt.plot(l, alpha = 0.5 if len(losses_bce) != 1 else 1)
+    for i in range(len(losses_bce)):
+        plt.plot(losses_bce[i], alpha = 1, label=labels[i] if labels is not None else "", color=colors[i] if colors is not None else "blue")
 
     #if len(losses_bce) != 1:
         #plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
@@ -20,8 +20,8 @@ def plot_losses(losses_bce, losses_mse, save=False, filename=None, label='', plo
     plt.legend()
     
     plt.subplot(1, 2, 2)
-    for l in losses_mse:
-        plt.plot(l, alpha = 0.5 if len(losses_mse) != 1 else 1, color="orange")
+    for i in range(len(losses_mse)):
+        plt.plot(losses_mse[i], alpha = 1, label=labels[i] if labels is not None else "", color=colors[i] if colors is not None else "blue")
 
     #if len(losses_mse) != 1:
         #plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
