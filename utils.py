@@ -10,8 +10,6 @@ def plot_losses(losses_bce, losses_mse, labels=None, colors=None, save=False, fi
     for i in range(len(losses_bce)):
         plt.plot(losses_bce[i], alpha = 1, label=labels[i] if labels is not None else "", color=colors[i] if colors is not None else "blue")
 
-    #if len(losses_bce) != 1:
-        #plt.plot(np.mean(np.array(losses_bce), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title(plot_labels[0])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
@@ -23,8 +21,6 @@ def plot_losses(losses_bce, losses_mse, labels=None, colors=None, save=False, fi
     for i in range(len(losses_mse)):
         plt.plot(losses_mse[i], alpha = 1, label=labels[i] if labels is not None else "", color=colors[i] if colors is not None else "blue")
 
-    #if len(losses_mse) != 1:
-        #plt.plot(np.mean(np.array(losses_mse), axis=0), alpha=1, linewidth=2, color='black', linestyle='--', label='Media')
     plt.title(plot_labels[1])
     plt.xlabel('Epochs')
     plt.ylabel('Loss')

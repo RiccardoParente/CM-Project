@@ -2,7 +2,8 @@ from NeuralNetworkBFGS_BCE import NeuralNetworkBFGS_BCE
 from NeuralNetworkBFGS_MSE import NeuralNetworkBFGS_MSE
 from utils import load_dataBCE, load_dataMSE, plot_losses, plot_gradients
 from losses import BCE, MSE
-    
+
+# hyperparameters  
 input_size_bce = 6
 hidden_size_bce = 10
 output_size_bce = 1
@@ -13,6 +14,7 @@ epochs = 1000
 tolerance = 1e-4
 regularization = 0.05
 
+# --- Loading dataset from CSV --- #
 X_bce, y_bce = load_dataBCE()
 
 X_mse_normalized, y_mse_normalized, x_mse, y_mse = load_dataMSE()
@@ -28,6 +30,7 @@ min_mse = float('inf')
 
 trials = 1
 
+# --- Instantiating and training models --- #
 for i in range(trials):
 
     nn_bce = NeuralNetworkBFGS_BCE(input_size_bce, hidden_size_bce, output_size_bce, BCE(), layers=1, regularization=regularization)
@@ -49,22 +52,15 @@ for i in range(trials):
     mean_time_mse += mt
 
 print("mean times: ", mean_time_bce/trials, mean_time_mse/trials)
+# plot loss and gradient norm
 plot_losses(losses_bce, losses_mse)
 plot_gradients(gradients_bce, gradients_mse)
-convergences_bce = []
-convergences_mse = []
 relative_bce = []
 relative_mse = []
 for t in range(trials):
-    convergence_bce = []
-    convergence_mse = []
-    for i in range(len(losses_bce[t])-1):
-        convergence_bce.append(losses_bce[t][i+1]/losses_bce[t][i])
-    for i in range(len(losses_mse[t])-1):
-        convergence_mse.append(losses_mse[t][i+1]/losses_mse[t][i])
-    convergences_bce.append(convergence_bce)
-    convergences_mse.append(convergence_mse)
-    relative_bce.append((losses_bce[t]-0.6932)/0.6932)
-    relative_mse.append((losses_mse[t]-1.0)/1.0)
-plot_losses(convergences_bce, convergences_mse, label="Convergence BFGS", plot_labels=["Convergence BCE", "Convergence MSE"])
+    # relative gap calculation
+    relative_bce.append([(x - 0.6932) / 0.6932 for x in losses_bce[t]])
+    relative_mse.append([(x - 1.0000) / 1.0000 for x in losses_mse[t]])
+
+# plot relative gap
 plot_losses(relative_bce, relative_mse, label="Relative gap BFGS", plot_labels=["Relative gap BCE", "Relative gap MSE"])

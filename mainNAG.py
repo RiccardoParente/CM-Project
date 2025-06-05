@@ -3,7 +3,7 @@ from NeuralNetworkNAG_MSE import NeuralNetworkNAG_MSE
 from utils import load_dataBCE, load_dataMSE, plot_losses, plot_gradients
 from losses import BCE, MSE
 
-# --- Caricamento dataset da CSV --- #
+# --- Loading dataset from CSV --- #
 X_bce, y_bce = load_dataBCE()
     
 X_mse_normalized, y_mse_normalized, x_mse, y_mse = load_dataMSE()
@@ -17,10 +17,10 @@ min_bce = float('inf')
 minimums_mse = []
 min_mse = float('inf')
 
-trials = 5
+trials = 1
 
 for i in range(trials):
-    # --- Istanziamento modelli --- #
+    # --- Instantiating models --- #
     model_bce = NeuralNetworkNAG_BCE(
         input_size=6,
         hidden_size=200,
@@ -59,24 +59,17 @@ for i in range(trials):
     mean_time_mse += mt
     print(loss_mse[-1])
 
+
 print("mean times: ", mean_time_bce/trials, mean_time_mse/trials)
+# plot loss and gradient norm
 plot_losses(losses_bce, losses_mse)
 plot_gradients(gradients_bce, gradients_mse)
-convergences_bce = []
-convergences_mse = []
 relative_bce = []
 relative_mse = []
 for t in range(trials):
-    convergence_bce = []
-    convergence_mse = []
-    for i in range(len(losses_bce[t])-1):
-        convergence_bce.append(losses_bce[t][i+1]/losses_bce[t][i])
-    for i in range(len(losses_mse[t])-1):
-        convergence_mse.append(losses_mse[t][i+1]/losses_mse[t][i])
-    convergences_bce.append(convergence_bce)
-    convergences_mse.append(convergence_mse)
-    relative_bce.append((losses_bce[t] - 0.06) / 0.06 )
-    relative_mse.append((losses_mse[t] - 0.03) / 0.03)
+    # relative gap calculation
+    relative_bce.append([(x - 0.06) / 0.06 for x in losses_bce[t]])
+    relative_mse.append([(x - 0.03) / 0.03 for x in losses_mse[t]])
 
-plot_losses(convergences_bce, convergences_mse, label="Convergence NAG", plot_labels=["Convergence BCE", "Convergence MSE"])
+# plot relative gap
 plot_losses(relative_bce, relative_mse, label="Relative gap NAG", plot_labels=["Relative gap BCE", "Relative gap MSE"])

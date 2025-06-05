@@ -196,10 +196,6 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
                     best_gradient = gradients
                     best_iter = k
 
-                #if np.linalg.norm(gradients) < tol:
-                    #print(f"Converged at iteration {k+1}, loss: {self.current_loss:.6f}, gradient norm: {np.linalg.norm(best_gradient)}")
-                    #break
-
                 p_k = np.zeros_like(gradients)
 
                 # Direction calculation
@@ -222,6 +218,7 @@ class NeuralNetworkBFGS_BCE(NeuralNetwork):
                     H_block = H_k_blocks['output'][i]
                     p_k[ptr : ptr + self.hidden_size + 1] = -np.dot(H_block, grad_block)
 
+                # Step calculation
                 alpha_k = self.line_search_wolfe(p_k, gradients, x, y, t, T)
                 t += 1
 
